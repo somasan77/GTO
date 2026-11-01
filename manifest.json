@@ -1,0 +1,16 @@
+{
+  "name": "6-Max GTO Trainer",
+  "short_name": "GTO Trainer",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121214",
+  "theme_color": "#121214",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/806/806131.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
