@@ -2,185 +2,301 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>6-Max GTO Trainer</title>
-
-<!-- PWA / アプリ化正規設定 -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#121214">
-<link rel="manifest" href="./manifest.json">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>6-MAX / 9-MAX GTO CASH TRAINER (100BB)</title>
 <style>
   :root {
-    --bg: #121214;
-    --card: #1e1e24;
+    --bg: #0f1117;
+    --card: #181b24;
     --primary: #3b82f6;
-    --raise: #ef4444;
-    --call: #10b981;
-    --fold: #24242e;
     --text: #f8fafc;
     --muted: #94a3b8;
     --accent: #f59e0b;
     --success: #22c55e;
     --wrong: #f43f5e;
+
+    /* GTO アクションカラー */
+    --c-raise: #ef4444;      /* レイズ / 3-Bet / 4-Bet (赤) */
+    --c-call: #10b981;       /* コール / リンプ (緑) */
+    --c-fold: #1e293b;       /* フォールド (ダークブルー/グレー) */
+    --c-fold-text: #64748b;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 10px; padding-bottom: 40px; }
+  body { background: var(--bg); color: var(--text); padding: 10px; padding-bottom: 50px; }
   
-  .header-wrap { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  h1 { font-size: 1.05rem; color: var(--muted); font-weight: 600; margin: 0; }
-  .fs-btn { background: #272730; border: 1px solid #3a3a48; color: var(--muted); font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+  .header-area { text-align: center; margin-bottom: 10px; }
+  h1 { font-size: 1.05rem; color: #f1f5f9; font-weight: 900; letter-spacing: 0.5px; }
+  .subtitle { font-size: 0.68rem; color: #38bdf8; font-weight: 700; margin-top: 2px; }
 
   /* タブ */
-  .tabs { display: flex; background: #272730; border-radius: 10px; padding: 4px; margin-bottom: 12px; gap: 4px; }
-  .tab-btn { flex: 1; padding: 9px 2px; font-size: 0.76rem; border: none; background: transparent; color: var(--muted); font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; }
-  .tab-btn.active { background: var(--primary); color: #fff; }
+  .tabs { display: flex; background: #1f2430; border-radius: 10px; padding: 4px; margin-bottom: 10px; gap: 3px; }
+  .tab-btn { flex: 1; padding: 9px 1px; font-size: 0.72rem; border: none; background: transparent; color: var(--muted); font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
 
-  .section-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+  .section-label { font-size: 0.73rem; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+
+  /* 推奨サイズバッジ */
+  .sizing-badge {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid #0284c7;
+    color: #38bdf8;
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 800;
+  }
 
   /* ポジショングリッド */
-  .pos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-bottom: 10px; }
-  .pos-btn { padding: 9px 0; border: 1px solid #333; background: var(--card); color: var(--text); font-weight: bold; border-radius: 8px; font-size: 0.82rem; cursor: pointer; text-align: center; }
+  .pos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 9px; }
+  .pos-btn { padding: 8px 0; border: 1px solid #2e3646; background: var(--card); color: var(--text); font-weight: 800; border-radius: 8px; font-size: 0.8rem; cursor: pointer; text-align: center; }
   .pos-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-  .pos-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .pos-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
-  /* 凡例バー */
-  .legend-bar { display: flex; justify-content: space-between; align-items: center; background: #18181f; padding: 6px 12px; border-radius: 8px; font-size: 0.72rem; margin-bottom: 8px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-weight: bold; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
-  .dot-raise { background: var(--raise); }
-  .dot-call { background: var(--call); }
-  .dot-fold { background: #33333f; }
-  .dot-highlight { background: var(--primary); }
+  /* 凡例・ズームコントロール */
+  .legend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .zoom-controls { display: flex; gap: 4px; align-items: center; }
+  .zoom-btn { background: #262c3a; border: 1px solid #3b4457; color: #cbd5e1; font-size: 0.75rem; font-weight: bold; padding: 3px 8px; border-radius: 6px; cursor: pointer; }
+  .zoom-btn:active { background: var(--primary); color: #fff; }
+
+  .legend-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #161922; padding: 6px; border-radius: 8px; font-size: 0.67rem; margin-bottom: 8px; font-weight: 800; text-align: center; border: 1px solid #232936; }
+  .legend-item { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 3px 0; border-radius: 4px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
 
   /* 13×13 レンジマトリックス */
-  .matrix-wrapper { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 6px; margin-bottom: 12px; }
-  .matrix-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 1.5px; }
+  .matrix-wrapper {
+    background: var(--card);
+    border: 1px solid #2d3545;
+    border-radius: 12px;
+    padding: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+  }
+  .matrix-inner {
+    transform-origin: 0 0;
+    transition: transform 0.05s ease-out;
+    width: 100%;
+    will-change: transform;
+  }
+  .matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 1.5px;
+    width: 100%;
+  }
   .matrix-cell {
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(6.5px, 2.1vw, 9.5px);
-    font-weight: 700;
+    font-size: clamp(6.5px, 2.05vw, 9.5px);
+    font-weight: 800;
     border-radius: 2px;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.05s ease;
   }
-  .matrix-cell:active { transform: scale(0.9); }
+  .matrix-cell.selected { outline: 2.5px solid #fff; outline-offset: -1px; box-shadow: 0 0 10px rgba(255, 255, 255, 1); z-index: 5; }
+
+  /* アクションカラークラス（純粋＆混合グラデーション） */
+  .act-raise { background: var(--c-raise) !important; color: #fff !important; }
+  .act-call  { background: var(--c-call) !important; color: #fff !important; }
+  .act-fold  { background: var(--c-fold) !important; color: var(--c-fold-text) !important; }
   
-  /* チェッカー用カラー */
-  .matrix-cell.act-raise { background: var(--raise); color: #fff; }
-  .matrix-cell.act-call { background: var(--call); color: #fff; }
-  .matrix-cell.act-fold { background: var(--fold); color: #64748b; }
-  .matrix-cell.act-walk { background: var(--primary); color: #fff; }
-  .matrix-cell.selected { outline: 2px solid #fff; outline-offset: -1px; box-shadow: 0 0 8px rgba(255, 255, 255, 0.9); z-index: 3; }
+  /* スプリット（混合頻度）グラデーション */
+  .act-rf { background: linear-gradient(135deg, var(--c-raise) 50%, var(--c-fold) 50%) !important; color: #fff !important; }
+  .act-rc { background: linear-gradient(135deg, var(--c-raise) 50%, var(--c-call) 50%) !important; color: #fff !important; }
+  .act-cf { background: linear-gradient(135deg, var(--c-call) 50%, var(--c-fold) 50%) !important; color: #fff !important; }
 
-  /* 対照表ハイライト用カラー */
-  .matrix-cell.target-hl { background: var(--primary); color: #fff; box-shadow: 0 0 4px rgba(59, 130, 246, 0.7); }
-  .matrix-cell.target-dim { background: #16161c; color: #3f3f4e; opacity: 0.45; }
+  /* 結果カード */
+  .result-card { background: var(--card); border-radius: 12px; padding: 14px; text-align: center; border: 1px solid #2d3545; margin-bottom: 10px; }
+  .badge { display: inline-block; padding: 6px 20px; border-radius: 30px; font-size: 1.2rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; }
+  .badge.raise { background: #ef4444; color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
+  .badge.call { background: #10b981; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+  .badge.fold { background: #334155; color: #cbd5e1; }
+  .badge.mixed { background: linear-gradient(135deg, #ef4444 50%, #10b981 50%); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
 
-  /* 判定結果カード */
-  .result-card { background: var(--card); border-radius: 12px; padding: 14px; text-align: center; border: 1px solid #333; }
-  .badge { display: inline-block; padding: 7px 20px; border-radius: 30px; font-size: 1.25rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 6px; }
-  .badge.raise { background: var(--raise); color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
-  .badge.call { background: var(--call); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
-  .badge.fold { background: #475569; color: #fff; }
-  .badge.walk { background: var(--primary); color: #fff; }
-  .result-desc { font-size: 0.82rem; color: #cbd5e1; line-height: 1.4; margin-bottom: 8px; }
-  .situation-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .result-desc { font-size: 0.82rem; color: #cbd5e1; line-height: 1.45; margin-bottom: 6px; }
+  .situation-label { font-size: 0.74rem; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
 
-  .logic-box { background: #16161c; border-left: 3px solid var(--accent); padding: 10px 12px; border-radius: 0 8px 8px 0; text-align: left; font-size: 0.78rem; line-height: 1.45; color: #e2e8f0; margin-top: 8px; }
-  .logic-title { font-weight: bold; color: var(--accent); margin-bottom: 4px; font-size: 0.78rem; display: flex; align-items: center; gap: 4px; }
+  /* ツリー遷移クイックボタン */
+  .tree-nav-box { margin-top: 10px; display: flex; gap: 6px; justify-content: center; }
+  .tree-nav-btn {
+    background: #1e293b;
+    border: 1px solid #3b82f6;
+    color: #93c5fd;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .tree-nav-btn:active { background: var(--primary); color: #fff; }
 
-  /* 対照表テーブル */
-  .table-wrapper { overflow-x: auto; background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 6px; margin-bottom: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.72rem; text-align: left; }
-  th, td { padding: 9px 6px; border-bottom: 1px solid #2a2a35; white-space: nowrap; cursor: pointer; }
-  th { color: var(--muted); font-weight: 600; background: #18181e; position: sticky; top: 0; }
-  th.active-th { color: #60a5fa; background: #1f2937; }
-  td.active-td { background: #1e3a8a; color: #fff; font-weight: bold; border-radius: 4px; }
-  tr:last-child td { border-bottom: none; }
-  td.highlight { color: #60a5fa; font-weight: bold; }
-  
-  .table-hl-info { background: #1e293b; border-left: 3px solid var(--primary); padding: 8px 12px; font-size: 0.76rem; border-radius: 0 6px 6px 0; margin-bottom: 8px; font-weight: 600; }
+  /* GTO動的インサイトボックス */
+  .logic-box { background: #13161f; border-left: 3.5px solid var(--accent); padding: 10px 12px; border-radius: 0 8px 8px 0; text-align: left; font-size: 0.77rem; line-height: 1.5; color: #e2e8f0; margin-top: 8px; }
+  .logic-title { font-weight: 800; color: var(--accent); margin-bottom: 4px; font-size: 0.78rem; display: flex; align-items: center; gap: 4px; }
+  .gto-note-tag { display: inline-block; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #d97706; padding: 1px 5px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; margin-bottom: 4px; }
 
   /* クイズ画面 */
   .filter-box { margin-bottom: 10px; }
-  .filter-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .filter-btn { padding: 8px 4px; font-size: 0.75rem; font-weight: bold; background: #272730; border: 1px solid #3a3a48; color: var(--muted); border-radius: 8px; cursor: pointer; text-align: center; }
+  .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .filter-btn { padding: 7px 2px; font-size: 0.7rem; font-weight: 800; background: #1e2430; border: 1px solid #2e3748; color: var(--muted); border-radius: 8px; cursor: pointer; text-align: center; }
   .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
 
-  .quiz-card { background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid #333; text-align: center; }
-  .quiz-score-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; }
-  .quiz-sit { font-size: 0.85rem; color: #93c5fd; font-weight: 600; margin-bottom: 6px; min-height: 1.2rem; }
-  .quiz-hand { font-size: 2.3rem; font-weight: 900; letter-spacing: 2px; color: #fff; margin-bottom: 16px; }
+  .quiz-card { background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid #2d3545; text-align: center; }
+  .quiz-score-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
+  .quiz-sit { font-size: 0.85rem; color: #93c5fd; font-weight: 800; margin-bottom: 6px; min-height: 1.2rem; }
+  .quiz-hand { font-size: 2.3rem; font-weight: 900; letter-spacing: 2px; color: #fff; margin-bottom: 14px; }
   
-  .quiz-btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-  .quiz-btn { padding: 14px 0; font-size: 0.95rem; font-weight: 800; border: none; border-radius: 10px; color: #fff; cursor: pointer; }
+  .quiz-btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .quiz-btn { padding: 13px 0; font-size: 0.85rem; font-weight: 900; border: none; border-radius: 10px; color: #fff; cursor: pointer; }
   .quiz-btn:active { transform: scale(0.97); }
-  .quiz-btn.btn-raise { background: var(--raise); }
-  .quiz-btn.btn-call { background: var(--call); }
-  .quiz-btn.btn-fold { background: #475569; }
+  .quiz-btn.btn-raise { background: #ef4444; }
+  .quiz-btn.btn-call { background: #10b981; }
+  .quiz-btn.btn-fold { background: #334155; }
+  .quiz-btn.btn-mix { background: linear-gradient(135deg, #ef4444 50%, #10b981 50%); }
 
-  .feedback-box { display: none; padding: 12px; border-radius: 10px; margin-top: 12px; text-align: left; }
-  .feedback-box.correct { background: rgba(34, 197, 94, 0.15); border: 1px solid var(--success); }
-  .feedback-box.wrong { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--wrong); }
-  .feedback-status { font-size: 1rem; font-weight: 900; margin-bottom: 4px; }
+  .feedback-box { display: none; padding: 14px; border-radius: 12px; margin-top: 12px; text-align: left; }
+  .feedback-box.correct { background: rgba(34, 197, 94, 0.12); border: 1px solid var(--success); }
+  .feedback-box.wrong { background: rgba(244, 63, 94, 0.12); border: 1px solid var(--wrong); }
+  .feedback-status { font-size: 1.05rem; font-weight: 900; margin-bottom: 8px; text-align: center; }
   .feedback-box.correct .feedback-status { color: var(--success); }
   .feedback-box.wrong .feedback-status { color: var(--wrong); }
-  .next-btn { width: 100%; margin-top: 10px; padding: 12px; background: var(--primary); border: none; color: #fff; font-size: 0.9rem; font-weight: bold; border-radius: 8px; cursor: pointer; }
+
+  .feedback-tile-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0 12px 0;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+  }
+  .feedback-hand-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    height: 50px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    color: #fff;
+  }
+
+  .next-btn { width: 100%; margin-top: 10px; padding: 12px; background: var(--primary); border: none; color: #fff; font-size: 0.9rem; font-weight: 800; border-radius: 8px; cursor: pointer; }
+
+  /* 折りたたみ式（アコーディオン）解説カード */
+  .accordion-card {
+    background: var(--card);
+    border: 1px solid #2d3545;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .accordion-header {
+    padding: 11px 14px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #93c5fd;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    background: #1a1e2a;
+  }
+  .accordion-header:active { background: #222736; }
+  .accordion-icon { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s ease; }
+  .accordion-card.open .accordion-icon { transform: rotate(180deg); }
+  .accordion-body {
+    display: none;
+    padding: 12px 14px;
+    border-top: 1px solid #2a3142;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+  .accordion-card.open .accordion-body { display: block; }
+  .accordion-body strong { color: #38bdf8; font-size: 0.78rem; }
+  .guide-list { margin: 6px 0; padding-left: 16px; }
+  .guide-list li { margin-bottom: 4px; }
 </style>
 </head>
 <body>
 
-<div class="header-wrap">
-  <h1>6-MAX 100bb GTO TRAINER</h1>
-  <button class="fs-btn" onclick="toggleFullScreen()">全画面表示</button>
+<div class="header-area">
+  <h1>6-MAX / 9-MAX GTO TRAINER</h1>
+  <div class="subtitle">9max Cash 100BB GTO SOLVER BASED</div>
 </div>
 
-<!-- 4分割タブ -->
+<!-- タブ -->
 <div class="tabs">
   <button class="tab-btn active" id="tabRfi" onclick="setMode('rfi')">オープン</button>
   <button class="tab-btn" id="tabFacing" onclick="setMode('facing')">対オープン</button>
+  <button class="tab-btn" id="tab4bet" onclick="setMode('facing3bet')">対3-Bet (4B)</button>
   <button class="tab-btn" id="tabQuiz" onclick="setMode('quiz')">🎯 クイズ</button>
-  <button class="tab-btn" id="tabTable" onclick="setMode('table')">📋 対照表</button>
+  <button class="tab-btn" id="tabTable" onclick="setMode('table')">📋 レンジ表</button>
 </div>
 
-<!-- チェッカー画面 (13×13タップ選択式) -->
+<!-- チェッカー画面 -->
 <div id="checkerScreen">
-  <div id="openerSection" style="display:none;">
-    <div class="section-label">1. オープナー（レイズした相手）</div>
-    <div class="pos-grid" id="openerGrid"></div>
+  <!-- 相手のポジション選択エリア（対オープン／対3-Bet時） -->
+  <div id="villainSection" style="display:none;">
+    <div class="section-label">
+      <span id="villainLabel">相手のポジション</span>
+      <span class="sizing-badge" id="villainSizeBadge">-</span>
+    </div>
+    <div class="pos-grid" id="villainGrid"></div>
   </div>
 
-  <div class="section-label" id="heroLabel">あなたのポジション</div>
+  <div class="section-label">
+    <span id="heroLabel">あなたのポジション (Hero)</span>
+    <span class="sizing-badge" id="heroSizeBadge">-</span>
+  </div>
   <div class="pos-grid" id="heroGrid"></div>
 
-  <!-- 凡例 -->
-  <div class="legend-bar">
-    <div class="legend-item"><div class="legend-dot dot-raise"></div><span id="lgRaiseText">RAISE</span></div>
-    <div class="legend-item" id="lgCallWrap"><div class="legend-dot dot-call"></div><span>CALL</span></div>
-    <div class="legend-item"><div class="legend-dot dot-fold"></div><span>FOLD</span></div>
-    <div style="color:var(--muted);">マスをタップで選択</div>
+  <div class="legend-header">
+    <div style="font-size:0.7rem; color:var(--muted);">※ ピンチで拡大 / ダブルタップでリセット</div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoomMatrix('checker', 0.25)">＋</button>
+      <button class="zoom-btn" onclick="zoomMatrix('checker', -0.25)">−</button>
+      <button class="zoom-btn" onclick="resetMatrixZoom('checker')">1x</button>
+    </div>
   </div>
 
-  <!-- 13×13 ハンドマトリックス -->
-  <div class="matrix-wrapper">
-    <div class="matrix-grid" id="checkerMatrix"></div>
+  <div class="legend-grid" id="checkerLegend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div><span id="lgRaiseText">RAISE</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div><span id="lgCallText">CALL</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1e293b;"></div><span>FOLD</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#ef4444 50%,#10b981 50%);"></div><span>MIX(頻度)</span></div>
   </div>
 
-  <!-- 判定結果カード -->
+  <!-- ピンチズーム対応ラッパー -->
+  <div class="matrix-wrapper" id="checkerWrapper">
+    <div class="matrix-inner" id="checkerInner">
+      <div class="matrix-grid" id="checkerMatrix"></div>
+    </div>
+  </div>
+
   <div class="result-card" id="resultBox">
     <div class="situation-label" id="sitLabel">-</div>
     <div class="badge fold" id="actionBadge">READY</div>
-    <div class="result-desc" id="actionDesc">ハンドを上の表からタップしてください</div>
+    <div class="result-desc" id="actionDesc">上の表からハンドをタップしてください</div>
+
+    <!-- ツリー進行クイックボタン -->
+    <div class="tree-nav-box" id="treeNavBox" style="display:none;">
+      <button class="tree-nav-btn" id="treeNavBtn" onclick="navigateTree()">次のツリー局面へ ➔</button>
+    </div>
     
     <div class="logic-box" id="logicBox" style="display:none;">
-      <div class="logic-title">💡 GTOの判断根拠（Why）</div>
+      <div class="logic-title">💡 GTOソルバー考察 ＆ 戦略メモ</div>
       <div id="logicText"></div>
     </div>
   </div>
@@ -192,9 +308,11 @@
     <div class="section-label">出題範囲フィルター</div>
     <div class="filter-grid">
       <button class="filter-btn active" id="fBtnAll" onclick="setQuizFilter('all')">全問ランダム</button>
-      <button class="filter-btn" id="fBtnRfi" onclick="setQuizFilter('rfi')">オープンのみ (RFI)</button>
-      <button class="filter-btn" id="fBtnBb" onclick="setQuizFilter('bb')">BBディフェンスのみ</button>
-      <button class="filter-btn" id="fBtnFacing" onclick="setQuizFilter('facing')">対オープン (BB以外)</button>
+      <button class="filter-btn" id="fBtnRfi" onclick="setQuizFilter('rfi')">オープン (RFI)</button>
+      <button class="filter-btn" id="fBtnFacing" onclick="setQuizFilter('facing')">対オープン</button>
+      <button class="filter-btn" id="fBtnBb" onclick="setQuizFilter('bb')">BBディフェンス</button>
+      <button class="filter-btn" id="fBtn4bet" onclick="setQuizFilter('facing3bet')">対3-Bet (4B)</button>
+      <button class="filter-btn" id="fBtnMix" onclick="setQuizFilter('mix')">混合(MIX)頻度</button>
     </div>
   </div>
 
@@ -210,13 +328,19 @@
       <button class="quiz-btn btn-raise" id="qBtnRaise" onclick="handleQuizAnswer('RAISE')">RAISE</button>
       <button class="quiz-btn btn-call" id="qBtnCall" onclick="handleQuizAnswer('CALL')">CALL</button>
       <button class="quiz-btn btn-fold" id="qBtnFold" onclick="handleQuizAnswer('FOLD')">FOLD</button>
+      <button class="quiz-btn btn-mix" id="qBtnMix" onclick="handleQuizAnswer('MIX')">MIX</button>
     </div>
 
     <div class="feedback-box" id="feedbackBox">
       <div class="feedback-status" id="feedbackStatus">正解！</div>
-      <div class="result-desc" id="feedbackDesc"></div>
+
+      <div class="feedback-tile-area">
+        <div class="feedback-hand-badge" id="feedbackHandBadge">---</div>
+      </div>
+
+      <div class="result-desc" id="feedbackDesc" style="font-weight:bold; font-size:0.9rem; text-align:center;"></div>
       <div class="logic-box" style="margin-top:8px;">
-        <div class="logic-title">💡 解説</div>
+        <div class="logic-title">💡 GTO解説</div>
         <div id="feedbackLogic"></div>
       </div>
       <button class="next-btn" onclick="nextQuizQuestion()">次の問題へ ➔</button>
@@ -224,184 +348,46 @@
   </div>
 </div>
 
-<!-- 対照表画面 (連動レンジ表付き) -->
+<!-- レンジ表画面 -->
 <div id="tableScreen" style="display:none;">
-  <div class="section-label">対照表（セルまたは列をタップで連動ハイライト）</div>
-  <div class="table-wrapper">
-    <table id="summaryTable">
-      <thead>
-        <tr>
-          <th>カテゴリ</th>
-          <th onclick="onTableColClick('UTG')">UTG</th>
-          <th onclick="onTableColClick('HJ')">HJ</th>
-          <th onclick="onTableColClick('CO')">CO</th>
-          <th onclick="onTableColClick('BTN')">BTN</th>
-          <th onclick="onTableColClick('SB')">SB</th>
-          <th onclick="onTableColClick('BB')">BB vs BTN</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>ポケット</td>
-          <td onclick="onTableCellClick('pocket','UTG',this)">66+</td>
-          <td onclick="onTableCellClick('pocket','HJ',this)">44+</td>
-          <td class="highlight" onclick="onTableCellClick('pocket','CO',this)">22+（全）</td>
-          <td onclick="onTableCellClick('pocket','BTN',this)">22+</td>
-          <td onclick="onTableCellClick('pocket','SB',this)">22+</td>
-          <td class="highlight" onclick="onTableCellClick('pocket','BB',this)">22+（全防衛）</td>
-        </tr>
-        <tr>
-          <td>スートA</td>
-          <td onclick="onTableCellClick('suited_a','UTG',this)">A2-5s, ATs+</td>
-          <td onclick="onTableCellClick('suited_a','HJ',this)">A2-5s, A8s+</td>
-          <td class="highlight" onclick="onTableCellClick('suited_a','CO',this)">A2s+（全）</td>
-          <td onclick="onTableCellClick('suited_a','BTN',this)">A2s+</td>
-          <td onclick="onTableCellClick('suited_a','SB',this)">A2s+</td>
-          <td class="highlight" onclick="onTableCellClick('suited_a','BB',this)">A2s+（全防衛）</td>
-        </tr>
-        <tr>
-          <td>オフスA</td>
-          <td onclick="onTableCellClick('offsuit_a','UTG',this)">AQo+</td>
-          <td onclick="onTableCellClick('offsuit_a','HJ',this)">AJo+</td>
-          <td onclick="onTableCellClick('offsuit_a','CO',this)">ATo+</td>
-          <td class="highlight" onclick="onTableCellClick('offsuit_a','BTN',this)">A2o+（全）</td>
-          <td onclick="onTableCellClick('offsuit_a','SB',this)">A4o+</td>
-          <td class="highlight" onclick="onTableCellClick('offsuit_a','BB',this)">A2o+（全防衛）</td>
-        </tr>
-        <tr>
-          <td>オフスBroad</td>
-          <td onclick="onTableCellClick('offsuit_broad','UTG',this)">-</td>
-          <td onclick="onTableCellClick('offsuit_broad','HJ',this)">KQo</td>
-          <td onclick="onTableCellClick('offsuit_broad','CO',this)">KTo+, QTo+</td>
-          <td onclick="onTableCellClick('offsuit_broad','BTN',this)">K7o+, Q8o+</td>
-          <td onclick="onTableCellClick('offsuit_broad','SB',this)">K8o+, Q9o+</td>
-          <td onclick="onTableCellClick('offsuit_broad','BB',this)">K4o+, Q6o+</td>
-        </tr>
-        <tr>
-          <td>コネクタ</td>
-          <td onclick="onTableCellClick('connector','UTG',this)">87s+</td>
-          <td onclick="onTableCellClick('connector','HJ',this)">65s+</td>
-          <td class="highlight" onclick="onTableCellClick('connector','CO',this)">54s+（全）</td>
-          <td onclick="onTableCellClick('connector','BTN',this)">43s+</td>
-          <td onclick="onTableCellClick('connector','SB',this)">43s+</td>
-          <td class="highlight" onclick="onTableCellClick('connector','BB',this)">32s+（全防衛）</td>
-        </tr>
-        <tr>
-          <td>スートK/Q</td>
-          <td onclick="onTableCellClick('suited_kq','UTG',this)">KTs+</td>
-          <td onclick="onTableCellClick('suited_kq','HJ',this)">K9s+</td>
-          <td onclick="onTableCellClick('suited_kq','CO',this)">K5s+</td>
-          <td class="highlight" onclick="onTableCellClick('suited_kq','BTN',this)">K2s+（全）</td>
-          <td onclick="onTableCellClick('suited_kq','SB',this)">K2s+, Q4s+</td>
-          <td class="highlight" onclick="onTableCellClick('suited_kq','BB',this)">K2s+, Q2s+</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- 連動レンジ表エリア -->
-  <div class="table-hl-info" id="tableHlInfo">タップした項目のハンドがここにハイライト表示されます</div>
-  <div class="matrix-wrapper">
-    <div class="matrix-grid" id="tableMatrix"></div>
+  <div class="accordion-card open" id="gtoGuideAccordion">
+    <div class="accordion-header" onclick="toggleAccordion('gtoGuideAccordion')">
+      <span>📖 9max cash 100BB GTO戦略ガイド（タップで開閉）</span>
+      <span class="accordion-icon">▼</span>
+    </div>
+    <div class="accordion-body">
+      <strong>【1. オープンサイジングのセオリー】</strong>
+      <ul class="guide-list">
+        <li><strong>アーリー (UTG/LJ): 2.0bb (Min-raise)</strong> ➔ 後ろに残っている人数が多いため、小さく刻んでリスクを最小化。</li>
+        <li><strong>カットオフ (CO): 2.3bb / ボタン (BTN): 2.5bb</strong> ➔ スチールの成功率を高めるため徐々にサイズアップ。</li>
+        <li><strong>スモールブラインド (SB): 3.0bb</strong> ➔ BBに対して最悪のポジション（OOP）で戦うため、大きなサイズでスチール。リンプ（緑）戦略との混合。</li>
+      </ul>
+      <strong>【2. 3-Betサイジング】</strong>
+      <ul class="guide-list">
+        <li><strong>In Position (IP): 3〜3.5倍</strong> ➔ 有利な位置から相手にプレッシャーをかける。</li>
+        <li><strong>Out of Position (SB): 5倍</strong> ➔ ポジションの不利を補うため、相手のコール基準を引き締めさせる特大サイズ。</li>
+      </ul>
+      <strong>【3. 対3-Bet（4-Bet戦略の鉄則）】</strong>
+      <ul class="guide-list">
+        <li><strong>サイズ: IPは3倍弱、OOPは2倍</strong> ➔ スタックコミットを意識した精緻なサイズ設計。</li>
+        <li><strong>構成比率: 60〜65% Fold / 23〜25% Raise / 11〜15% Call</strong>。</li>
+        <li><strong>アーリーポジション:</strong> low pocket（22〜55）およびmiddle以下のスーコネは <strong>pure call</strong>。</li>
+        <li><strong>レイトポジション (CO/BTN):</strong> low pocketやスーコネもfold頻度が増加。代わりに99+やAxs, Kxs, Axoのインディファ帯のraiseが広がり、AQs/AJs/KQsなどのコール群が形成される。</li>
+      </ul>
+    </div>
   </div>
 </div>
 
 <script>
-const POSITIONS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
-const RANKS = "23456789TJQKA";
-const GRID_RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-const RANK_VAL = {};
-for(let i=0; i<RANKS.length; i++) RANK_VAL[RANKS[i]] = i;
-
-function parseRange(str) {
-  const set = new Set();
-  const tokens = str.split(',').map(t => t.trim()).filter(Boolean);
-  for (const t of tokens) {
-    if (t.length >= 2 && t[0] === t[1]) {
-      if (t.includes('+')) {
-        const idx = RANK_VAL[t[0]];
-        for (let i = idx; i < 13; i++) set.add(RANKS[i] + RANKS[i]);
-      } else if (t.includes('-')) {
-        const [p1, p2] = t.split('-');
-        const low = Math.min(RANK_VAL[p1[0]], RANK_VAL[p2[0]]);
-        const high = Math.max(RANK_VAL[p1[0]], RANK_VAL[p2[0]]);
-        for (let i = low; i <= high; i++) set.add(RANKS[i] + RANKS[i]);
-      } else {
-        set.add(t.slice(0, 2));
-      }
-    } else if (t.length >= 3) {
-      if (t.includes('-')) {
-        const [p1, p2] = t.split('-');
-        const s = p1[p1.length - 1];
-        const rH = p1[0];
-        const low = Math.min(RANK_VAL[p1[1]], RANK_VAL[p2[1]]);
-        const high = Math.max(RANK_VAL[p1[1]], RANK_VAL[p2[1]]);
-        for (let i = low; i <= high; i++) set.add(`${rH}${RANKS[i]}${s}`);
-      } else if (t.includes('+')) {
-        const s = t[t.length - 2];
-        const raw = t.replace('+', '').replace(/[so]/, '');
-        const idx1 = RANK_VAL[raw[0]], idx2 = RANK_VAL[raw[1]];
-        const diff = idx1 - idx2;
-        if (diff === 1 || diff === 2) {
-          let step = 0;
-          while (idx1 + step < 13) {
-            set.add(`${RANKS[idx1+step]}${RANKS[idx2+step]}${s}`);
-            step++;
-          }
-        } else {
-          for (let i = idx2; i < idx1; i++) set.add(`${raw[0]}${RANKS[i]}${s}`);
-        }
-      } else {
-        set.add(t);
-      }
-    }
-  }
-  return set;
+function toggleAccordion(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
 }
 
-const RFI_DATA = {
-  'UTG': parseRange("66+, A5s-A4s, ATs+, KTs+, QTs+, JTs, T9s, 87s+, AQo+"),
-  'HJ': parseRange("44+, A3s-A5s, A8s+, K9s+, Q9s+, J9s+, T9s, 98s, 87s, 76s, 65s, AJo+, KQo"),
-  'CO': parseRange("22+, A2s+, K5s+, Q7s+, J7s+, T7s+, 97s+, 86s+, 76s, 65s, 54s, ATo+, KTo+, QTo+, JTo"),
-  'BTN': parseRange("22+, A2s+, K2s+, Q3s+, J5s+, T6s+, 96s+, 85s+, 74s+, 64s+, 53s+, 43s, A2o+, K7o+, Q8o+, J8o+, T8o+, 97o+, 87o"),
-  'SB': parseRange("22+, A2s+, K2s+, Q4s+, J6s+, T6s+, 96s+, 85s+, 75s+, 64s+, 53s+, A4o+, K8o+, Q9o+, J8o+, T8o+, 98o")
-};
-
-const FACING_DATA = {
-  'UTG_HJ': { '3bet': parseRange("QQ+, AKs, AKo, A5s"), 'call': parseRange("99-JJ, AQs, KQs, QJs, JTs") },
-  'UTG_CO': { '3bet': parseRange("JJ+, AKs, AKo, A4s-A5s, KQs"), 'call': parseRange("88-TT, AQs, AJs, KJs, QJs, JTs, T9s") },
-  'UTG_BTN': { '3bet': parseRange("JJ+, AKs, AKo, A4s-A5s, KQs, 87s"), 'call': parseRange("66-TT, AQs-ATs, KTs+, QTs+, JTs, T9s, 98s, AQo") },
-  'UTG_SB': { '3bet': parseRange("TT+, AJs+, AKo, A4s-A5s, KQs"), 'call': new Set() },
-  'UTG_BB': { '3bet': parseRange("QQ+, AKs, AKo, A4s-A5s"), 'call': parseRange("22-JJ, A2s-AQs, K9s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, AJo-AQo, KJo-KQo, QJo") },
-
-  'HJ_CO': { '3bet': parseRange("TT+, AJs+, AKo, A4s-A5s, KQs, 87s"), 'call': parseRange("77-99, ATs, KJs-KTs, QJs-QTs, JTs, T9s, 98s, AQo") },
-  'HJ_BTN': { '3bet': parseRange("TT+, AJs+, AKo, A4s-A5s, KQs, KJs, 76s, 87s"), 'call': parseRange("55-99, ATs, KTs, QTs+, JTs, T9s, 98s, AQo") },
-  'HJ_SB': { '3bet': parseRange("99+, ATs+, AJo+, A4s-A5s, KTs+, QTs+, JTs"), 'call': new Set() },
-  'HJ_BB': { '3bet': parseRange("JJ+, AQs+, AKo, A4s-A5s, 76s"), 'call': parseRange("22-TT, A2s-AJs, K7s+, Q8s+, J8s+, T8s+, 97s+, 86s+, 75s+, 64s+, 54s, ATo-AQo, KTo+, QTo+, JTo") },
-
-  'CO_BTN': { '3bet': parseRange("88+, ATs+, AJo+, A2s-A5s, KJs+, QJs, JTs, 87s, 76s"), 'call': parseRange("44-77, A9s-A6s, KTs-K7s, QTs-Q8s, J9s, T8s+, 97s+, 86s, 65s, 54s, ATo, KQo") },
-  'CO_SB': { '3bet': parseRange("77+, A8s+, AJo+, A2s-A5s, KTs+, QTs+, JTs, T9s, KQo"), 'call': new Set() },
-  'CO_BB': { '3bet': parseRange("TT+, AJs+, AQo+, A2s-A5s, KJs, T8s, 86s, 65s"), 'call': parseRange("22-99, A2s-ATs, K2s-KTs, Q4s+, J6s+, T6s+, 96s+, 85s+, 74s+, 63s+, 53s+, 43s, A8o-AJo, K9o+, Q9o+, J9o+, T8o+, 98o, 87o") },
-
-  'BTN_SB': { '3bet': parseRange("55+, A2s+, K9s+, Q9s+, J9s+, T8s+, 97s+, 87s, 76s, 65s, 54s, A9o+, KJo+, QJo"), 'call': new Set() },
-  'BTN_BB': { '3bet': parseRange("88+, ATs+, A2s-A5s, KTs+, QTs, JTs, 86s, 75s, 64s, 53s, AJo+, KQo"), 'call': parseRange("22-77, A6s-A9s, K2s-K9s, Q2s+, J2s+, T2s+, 94s+, 83s+, 73s+, 62s+, 52s+, 42s+, 32s, A2o-ATo, K4o+, Q6o+, J7o+, T7o+, 97o+, 86o+, 75o+, 65o") },
-
-  'SB_BB': { '3bet': parseRange("88+, ATs+, A2s-A5s, KJs+, QJs, JTs, 97s, 86s, 75s, 64s, 53s, AJo+, KQo"), 'call': parseRange("22-77, A6s-A9s, K2s-KTs, Q2s+, J2s+, T2s+, 92s+, 82s+, 72s+, 62s+, 52s+, 42s+, 32s, A2o-ATo, K5o+, Q7o+, J7o+, T7o+, 97o+, 86o+, 75o+, 65o") }
-};
-
-const TABLE_CELL_DATA = {
-  pocket: { UTG: "66+", HJ: "44+", CO: "22+", BTN: "22+", SB: "22+", BB: "22+" },
-  suited_a: { UTG: "A2s-A5s, ATs+", HJ: "A2s-A5s, A8s+", CO: "A2s+", BTN: "A2s+", SB: "A2s+", BB: "A2s+" },
-  offsuit_a: { UTG: "AQo+", HJ: "AJo+", CO: "ATo+", BTN: "A2o+", SB: "A4o+", BB: "A2o+" },
-  offsuit_broad: { UTG: "", HJ: "KQo", CO: "KTo+, QTo+, JTo", BTN: "K7o+, Q8o+, J8o+", SB: "K8o+, Q9o+, J8o+, T8o+", BB: "K4o+, Q6o+, J7o+, T7o+, 87o+" },
-  connector: { UTG: "87s+", HJ: "65s+", CO: "54s+", BTN: "43s+", SB: "43s+", BB: "32s+" },
-  suited_kq: { UTG: "KTs+", HJ: "K9s+", CO: "K5s+", BTN: "K2s+", SB: "K2s+, Q4s+", BB: "K2s+, Q2s+" }
-};
-
-let currentMode = 'rfi';
-let heroPos = 'UTG';
-let openerPos = 'UTG';
-let selectedHand = 'AKs';
+const POSITIONS = ['UTG', 'LJ', 'CO', 'BTN', 'SB', 'BB'];
+const GRID_RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+const RANK_VAL = {};
+for(let i=0; i<GRID_RANKS.length; i++) RANK_VAL[GRID_RANKS[i]] = 12 - i;
 
 const ALL_HANDS_MATRIX = [];
 for (let r = 0; r < 13; r++) {
@@ -414,48 +400,252 @@ for (let r = 0; r < 13; r++) {
   ALL_HANDS_MATRIX.push(row);
 }
 
+// ==========================================
+// 推奨サイジング データベース
+// ==========================================
+const SIZING_DATA = {
+  rfi: {
+    UTG: '2.0bb (Min)', LJ: '2.0bb (Min)', CO: '2.3bb', BTN: '2.5bb', SB: '3.0bb (Limp混合)'
+  },
+  facing: {
+    UTG: '3.0〜3.5x', LJ: '3.0〜3.5x', CO: '3.0〜3.5x', BTN: '3.5x',
+    SB: '5.0x (OOP特大)',
+    BB_UTG: '6.0x (vs 2bb)', BB_LJ: '6.0x (vs 2bb)', BB_CO: '6.0x (vs 2.3bb)', BB_BTN: '5.0x (vs 2.5bb)', BB_SB: '3.0x (vs 3bb)'
+  },
+  facing3bet: {
+    IP: '約3.0x弱 (IP 4-Bet)', OOP: '約2.0x (OOP 4-Bet)'
+  }
+};
+
+// ==========================================
+// GTO ソルバー判定エンジン（画像1〜7完全準拠）
+// 返り値: 'R' (Raise), 'C' (Call), 'F' (Fold), 'RF' (Raise/Fold), 'RC' (Raise/Call), 'CF' (Call/Fold)
+// ==========================================
+function evaluateGtoAction(mode, villain, hero, hand) {
+  const isPair = hand.length === 2;
+  const isSuited = hand.endsWith('s');
+  const r1 = hand[0], r2 = hand[1];
+  const v1 = RANK_VAL[r1], v2 = RANK_VAL[r2];
+  const diff = Math.abs(v1 - v2);
+
+  // 1. OPEN (RFI) [画像2]
+  if (mode === 'rfi') {
+    if (hero === 'UTG') {
+      if (['AA','KK','QQ','JJ','TT','99','88','77'].includes(hand)) return 'R';
+      if (['66','55'].includes(hand)) return 'RF';
+      if (['AKs','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','A5s','A4s'].includes(hand)) return 'R';
+      if (['A3s','A2s','76s','65s','Q9s','J9s'].includes(hand)) return 'RF';
+      if (['AKo','AQo'].includes(hand)) return 'R';
+      if (['AJo'].includes(hand)) return 'RF';
+      return 'F';
+    }
+    if (hero === 'LJ') {
+      if (['AA','KK','QQ','JJ','TT','99','88','77','66','55'].includes(hand)) return 'R';
+      if (['44','33','22'].includes(hand)) return 'RF';
+      if (r1 === 'A' && isSuited) return 'R';
+      if (['KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s','65s'].includes(hand)) return 'R';
+      if (['K8s','K7s','Q8s','J8s','T8s','86s','54s'].includes(hand)) return 'RF';
+      if (['AKo','AQo','AJo','KQo'].includes(hand)) return 'R';
+      if (['ATo','KJo'].includes(hand)) return 'RF';
+      return 'F';
+    }
+    if (hero === 'CO') {
+      if (isPair) return 'R';
+      if (r1 === 'A' && isSuited) return 'R';
+      if (isSuited && (v1 >= 11 || (v1 >= 9 && v2 >= 4) || (v1 >= 7 && v2 >= 3) || diff <= 2)) return 'R';
+      if (['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo','JTo'].includes(hand)) return 'R';
+      if (['A8o','K9o','Q9o','J9o','T9o'].includes(hand)) return 'RF';
+      return 'F';
+    }
+    if (hero === 'BTN') {
+      if (isPair) return 'R';
+      if (isSuited && (v1 >= 10 || (v1 >= 8 && v2 >= 2) || diff <= 3)) return 'R';
+      if (['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','K7o','QJo','QTo','Q9o','Q8o','JTo','J9o','J8o','T9o','T8o','98o','97o','87o'].includes(hand)) return 'R';
+      return 'F';
+    }
+    if (hero === 'SB') {
+      // SBは赤（レイズ）と緑（リンプ）の混合
+      if (['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','AKo','AQo'].includes(hand)) return 'R';
+      if (['88','77','66','55','44','33','22'].includes(hand)) return 'RC';
+      if (r1 === 'A' && isSuited) return 'RC';
+      if (isSuited && diff <= 2) return 'C';
+      if (['AJo','ATo','KQo','KJo'].includes(hand)) return 'RC';
+      if (['A9o','A8o','A7o','KTo','QTo','JTo'].includes(hand)) return 'C';
+      if (isSuited && (v1 >= 9 || v2 >= 6)) return 'C';
+      return 'F';
+    }
+    return 'F';
+  }
+
+  // 2. FACING OPEN (3-Bet / Call) [画像1, 3, 7]
+  if (mode === 'facing') {
+    // BB Defense [画像7]
+    if (hero === 'BB') {
+      if (villain === 'BTN' || villain === 'SB') {
+        if (['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','AKo','AQo'].includes(hand)) return 'R';
+        if (['A5s','A4s','A3s','A2s','KQs','KJs'].includes(hand)) return 'R';
+        if (isPair) return 'C';
+        if (isSuited) return 'C';
+        if (['AJo','ATo','A9o','A8o','A7o','KQo','KJo','KTo','QJo','QTo','JTo','T9o','98o'].includes(hand)) return 'C';
+        return 'F';
+      }
+      // vs UTG / LJ / CO
+      if (['AA','KK','QQ','AKs','AKo'].includes(hand)) return 'R';
+      if (['JJ','AQs','A5s','A4s'].includes(hand)) return 'RC';
+      if (isPair) return 'C';
+      if (isSuited && (v1 >= 9 || diff <= 2 || ['A9s','A8s','A7s','A6s','KTs','QTs','JTs'].includes(hand))) return 'C';
+      if (['AQo','AJo','ATo','KQo','KJo','QJo'].includes(hand)) return 'C';
+      return 'F';
+    }
+
+    // SB vs BTN/CO/LJ/UTG (5x 特大3-Bet / Fold中心) [画像1, 3]
+    if (hero === 'SB') {
+      if (['AA','KK','QQ','JJ','AKs','AKo','AQs'].includes(hand)) return 'R';
+      if (['TT','99','AJs','ATs','A5s','A4s','KQs'].includes(hand)) return 'R';
+      if (villain === 'BTN' && ['88','77','A9s-A2s','KJs','KTs','QJs','QTs','JTs','T9s','AQo','KQo'].includes(hand)) return 'R';
+      return 'F';
+    }
+
+    // BTN vs CO/LJ/UTG [画像1, 3]
+    if (hero === 'BTN') {
+      if (['AA','KK','QQ','AKs','AKo'].includes(hand)) return 'R';
+      if (['JJ','TT','AQs','A5s','A4s'].includes(hand)) return 'RC';
+      if (isPair) return 'C'; // 全ポケットコール傾向
+      if (['AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','76s','65s'].includes(hand)) return 'C';
+      if (villain === 'CO' && ['AQo','KQo','Q9s','J9s','54s'].includes(hand)) return 'C';
+      return 'F';
+    }
+
+    // LJ/CO vs UTG [画像1]
+    if (['AA','KK','QQ','AKs','AKo'].includes(hand)) return 'R';
+    if (['JJ','TT','99','AQs','AJs','KQs','QJs','JTs','T9s'].includes(hand)) return 'C';
+    if (['A5s','A4s'].includes(hand)) return 'RF';
+    if (isPair && ['88','77','66'].includes(hand)) return 'CF';
+    return 'F';
+  }
+
+  // 3. FACING 3-BET (4-Bet) [画像4, 5, 6]
+  if (mode === 'facing3bet') {
+    // Pure 4-bet / All-in
+    if (['AA','KK','AKs'].includes(hand)) return 'R';
+    if (['QQ','AKo'].includes(hand)) return 'RC';
+    if (['A5s','A4s'].includes(hand)) return 'RF'; // ブラフ4-Bet枠
+
+    // UTG / LJ: low pocket & middleスーコネは pure call [画像4]
+    if (hero === 'UTG' || hero === 'LJ') {
+      if (['JJ','TT','99','88','77','66','55','44','33','22'].includes(hand)) return 'C';
+      if (['AQs','AJs','KQs','QJs','JTs','T9s','98s','87s'].includes(hand)) return 'C';
+      return 'F';
+    }
+
+    // CO / BTN: MP〜LPでは low pocketとスーコネのfold増、インディファ帯のraise [画像5, 6]
+    if (hero === 'CO' || hero === 'BTN') {
+      if (['JJ','TT','99'].includes(hand)) return 'RC';
+      if (['88','77'].includes(hand)) return 'CF';
+      if (['66','55','44','33','22'].includes(hand)) return 'F';
+      if (['AQs','AJs','KQs','QJs','JTs'].includes(hand)) return 'C';
+      if (['T9s','98s'].includes(hand)) return 'CF';
+      if (['A3s','A2s','K9s','Q9s'].includes(hand)) return 'RF';
+      return 'F';
+    }
+  }
+
+  return 'F';
+}
+
+function getGtoInsight(hand, mode, villain, hero, action) {
+  let note = '';
+
+  if (mode === 'rfi') {
+    if (hero === 'SB') {
+      return `【SB戦略】BBに対してOOPとなるため、強いプレミアは3.0bbにレイズしつつ、中位ポケットやスーコネ、オフスーツAはリンプ（緑）を多用してフロップを安く見に行く混合戦略がGTOの基本です。`;
+    }
+    return `【${hero}オープン】推奨サイズは【${SIZING_DATA.rfi[hero]}】です。後ろのプレイヤー数に応じた適正レンジで主導権を握ります。`;
+  }
+
+  if (mode === 'facing') {
+    if (hero === 'SB') {
+      return `【画像メモ：SBはBTNと類似。OOPのためスーコネでのcallやA middle〜low sでのraise率を減らす】<br>ポジション不利を補うため、推奨【5.0倍】の特大3-betを打つか、潔くフォールドする二極化戦略をとります。`;
+    }
+    if (hero === 'BB') {
+      return `【画像メモ：BB defense 100BB】<br>オッズが極めて良好なため、全ポケットペアやスーコネ、ブロードウェイを広くディフェンス（コール）します。`;
+    }
+    if (action.includes('R')) {
+      return `【3-Bet】推奨サイズは【${SIZING_DATA.facing.IP}】。プレミアでのバリューに加え、A5s/A4s等のブロッカー＋発展性ハンドをブラフに混ぜて相手を牽制します。`;
+    }
+    return `【Call】インポジション（IP）の有利さを活かし、相手の強い手だけを残さないようフロップへ進みます。`;
+  }
+
+  if (mode === 'facing3bet') {
+    const isLowPair = ['22','33','44','55'].includes(hand);
+    const isSuitedConn = ['T9s','98s','87s','76s','65s'].includes(hand);
+
+    if (hero === 'UTG' || hero === 'LJ') {
+      if (isLowPair || isSuitedConn) {
+        return `<span class="gto-note-tag">画像4メモ</span><br><strong>「low pocketとmiddle以下のスーコネはpure call」</strong><br>アーリーオープンでは相手の3-betレンジに対してインプライドオッズが高く、セットマインやビッグドロー狙いでコールが肯定されます。`;
+      }
+      return `<span class="gto-note-tag">画像4メモ</span><br><strong>「60%以上fold, 25%raise, 15%call」</strong><br>4-betサイズはIP 3x弱、OOP 2x。AA/KK/AKsのバリューとA5s/A4sのブラフにポラライズします。`;
+    } else {
+      if (isLowPair || isSuitedConn) {
+        return `<span class="gto-note-tag">画像5・6メモ</span><br><strong>「MP〜LPではlow pocketとmiddleスーコネもfold頻度が増える」</strong><br>レンジが横に広がるため、セットマインのオッズが見合わなくなりフォールドへ回ります。`;
+      }
+      return `<span class="gto-note-tag">画像5・6メモ</span><br><strong>「99+やAxs Kxs Axoのインディファ帯のraiseが広がり、AQs, AJs, KQsなどの間のcall群が作られる」</strong><br>OOP相手の場合はraiseが減ってcallが増えます。`;
+    }
+  }
+
+  return 'GTOソルバー基準に基づき、最適なEVを追求した判断です。';
+}
+
+let currentMode = 'rfi';
+let heroPos = 'CO';
+let villainPos = 'BTN';
+let selectedHand = 'AKs';
+
 function initUI() {
   renderPosButtons();
   initCheckerMatrix();
-  initTableMatrix();
+  setupPinchZoom('checkerWrapper', 'checkerInner', 'checker');
   updateChecker();
-}
-
-function toggleFullScreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(err => {
-      alert("全画面表示への切り替えがサポートされていません");
-    });
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  }
 }
 
 function setMode(mode) {
   currentMode = mode;
   document.getElementById('tabRfi').classList.toggle('active', mode === 'rfi');
   document.getElementById('tabFacing').classList.toggle('active', mode === 'facing');
+  document.getElementById('tab4bet').classList.toggle('active', mode === 'facing3bet');
   document.getElementById('tabQuiz').classList.toggle('active', mode === 'quiz');
   document.getElementById('tabTable').classList.toggle('active', mode === 'table');
 
-  document.getElementById('checkerScreen').style.display = (mode === 'rfi' || mode === 'facing') ? 'block' : 'none';
+  const isChecker = ['rfi', 'facing', 'facing3bet'].includes(mode);
+  document.getElementById('checkerScreen').style.display = isChecker ? 'block' : 'none';
   document.getElementById('quizScreen').style.display = mode === 'quiz' ? 'block' : 'none';
   document.getElementById('tableScreen').style.display = mode === 'table' ? 'block' : 'none';
 
-  if (mode === 'rfi' || mode === 'facing') {
-    document.getElementById('openerSection').style.display = mode === 'facing' ? 'block' : 'none';
-    document.getElementById('heroLabel').innerText = mode === 'facing' ? '2. あなたのポジション (Hero)' : 'あなたのポジション';
-    document.getElementById('lgCallWrap').style.display = mode === 'facing' ? 'flex' : 'none';
-    document.getElementById('lgRaiseText').innerText = mode === 'facing' ? '3-BET' : 'RAISE';
-    if (mode === 'facing' && heroPos === 'UTG') heroPos = 'BTN';
+  if (isChecker) {
+    const hasVillain = mode !== 'rfi';
+    document.getElementById('villainSection').style.display = hasVillain ? 'block' : 'none';
+    
+    if (mode === 'facing3bet') {
+      document.getElementById('heroLabel').innerText = '1. オープンしたあなた (Hero)';
+      document.getElementById('villainLabel').innerText = '2. 3-Betしてきた相手 (Villain)';
+      document.getElementById('lgRaiseText').innerText = '4-BET';
+      if (heroPos === 'BB') heroPos = 'CO';
+      if (villainPos === heroPos || POSITIONS.indexOf(villainPos) <= POSITIONS.indexOf(heroPos)) villainPos = 'BTN';
+    } else if (mode === 'facing') {
+      document.getElementById('villainLabel').innerText = '1. オープンした相手 (Villain)';
+      document.getElementById('heroLabel').innerText = '2. あなたのポジション (Hero)';
+      document.getElementById('lgRaiseText').innerText = '3-BET';
+      if (heroPos === 'UTG') heroPos = 'BTN';
+      if (villainPos === heroPos || POSITIONS.indexOf(villainPos) >= POSITIONS.indexOf(heroPos)) villainPos = 'CO';
+    } else {
+      document.getElementById('heroLabel').innerText = 'あなたのポジション (Hero)';
+      document.getElementById('lgRaiseText').innerText = 'RAISE';
+    }
+
     renderPosButtons();
     updateChecker();
   } else if (mode === 'quiz') {
-    nextQuizQuestion();
-  } else if (mode === 'table') {
-    onTableColClick('UTG');
+    if (!quizState.current) nextQuizQuestion();
   }
 }
 
@@ -467,10 +657,14 @@ function renderPosButtons() {
     btn.className = `pos-btn ${pos === heroPos ? 'active' : ''}`;
     btn.innerText = pos;
     if (currentMode === 'facing' && pos === 'UTG') btn.disabled = true;
+    if (currentMode === 'facing3bet' && (pos === 'SB' || pos === 'BB')) btn.disabled = true;
     btn.onclick = () => {
       heroPos = pos;
-      if (currentMode === 'facing' && POSITIONS.indexOf(openerPos) >= POSITIONS.indexOf(heroPos)) {
-        openerPos = POSITIONS[POSITIONS.indexOf(heroPos) - 1];
+      if (currentMode === 'facing' && POSITIONS.indexOf(villainPos) >= POSITIONS.indexOf(heroPos)) {
+        villainPos = POSITIONS[POSITIONS.indexOf(heroPos) - 1];
+      }
+      if (currentMode === 'facing3bet' && POSITIONS.indexOf(villainPos) <= POSITIONS.indexOf(heroPos)) {
+        villainPos = POSITIONS[POSITIONS.indexOf(heroPos) + 1] || 'BTN';
       }
       renderPosButtons();
       updateChecker();
@@ -478,21 +672,22 @@ function renderPosButtons() {
     heroGrid.appendChild(btn);
   });
 
-  if (currentMode === 'facing') {
-    const openerGrid = document.getElementById('openerGrid');
-    openerGrid.innerHTML = '';
-    const heroIdx = POSITIONS.indexOf(heroPos);
-    POSITIONS.slice(0, 5).forEach(pos => {
+  if (currentMode !== 'rfi') {
+    const villainGrid = document.getElementById('villainGrid');
+    villainGrid.innerHTML = '';
+    const hIdx = POSITIONS.indexOf(heroPos);
+    POSITIONS.forEach(pos => {
       const btn = document.createElement('button');
-      btn.className = `pos-btn ${pos === openerPos ? 'active' : ''}`;
+      btn.className = `pos-btn ${pos === villainPos ? 'active' : ''}`;
       btn.innerText = pos;
-      if (POSITIONS.indexOf(pos) >= heroIdx) btn.disabled = true;
+      if (currentMode === 'facing' && POSITIONS.indexOf(pos) >= hIdx) btn.disabled = true;
+      if (currentMode === 'facing3bet' && POSITIONS.indexOf(pos) <= hIdx) btn.disabled = true;
       btn.onclick = () => {
-        openerPos = pos;
+        villainPos = pos;
         renderPosButtons();
         updateChecker();
       };
-      openerGrid.appendChild(btn);
+      villainGrid.appendChild(btn);
     });
   }
 }
@@ -508,6 +703,7 @@ function initCheckerMatrix() {
       div.id = `chk_${hand}`;
       div.innerText = hand;
       div.onclick = () => {
+        if (zoomState.checker.isDragging) return;
         selectedHand = hand;
         updateChecker();
       };
@@ -517,254 +713,204 @@ function initCheckerMatrix() {
 }
 
 function updateChecker() {
-  const isRfi = currentMode === 'rfi';
+  const sit = document.getElementById('sitLabel');
   const badge = document.getElementById('actionBadge');
   const desc = document.getElementById('actionDesc');
-  const sit = document.getElementById('sitLabel');
   const logicBox = document.getElementById('logicBox');
   const logicText = document.getElementById('logicText');
+  const treeNavBox = document.getElementById('treeNavBox');
+  const treeNavBtn = document.getElementById('treeNavBtn');
 
-  let raiseRange = new Set();
-  let callRange = new Set();
-  let currentAction = 'FOLD';
+  // サイジングバッジ更新
+  const heroBadge = document.getElementById('heroSizeBadge');
+  const villainBadge = document.getElementById('villainSizeBadge');
 
-  if (isRfi) {
-    sit.innerText = `全員フォールド → あなた (${heroPos}) | 選択: ${selectedHand}`;
-    if (heroPos === 'BB') {
-      badge.className = 'badge walk';
-      badge.innerText = 'WALK';
-      desc.innerText = '全員フォールドしたため、BBはアクション不要でポットを獲得します。';
-      logicBox.style.display = 'none';
-      for (let r = 0; r < 13; r++) {
-        for (let c = 0; c < 13; c++) {
-          const h = ALL_HANDS_MATRIX[r][c];
-          const el = document.getElementById(`chk_${h}`);
-          el.className = `matrix-cell act-walk ${h === selectedHand ? 'selected' : ''}`;
-        }
-      }
-      return;
-    }
-
-    raiseRange = RFI_DATA[heroPos] || new Set();
-    const isRaise = raiseRange.has(selectedHand);
-    currentAction = isRaise ? 'OPEN RAISE' : 'FOLD';
-
-    badge.className = isRaise ? 'badge raise' : 'badge fold';
-    badge.innerText = currentAction;
-    desc.innerText = isRaise ? `${heroPos} の標準オープンレンジ内です（2.0〜2.5bbレイズ）。` : `${heroPos} のオープン基準を満たしていません。`;
-    logicText.innerText = getActionLogic('rfi', heroPos, null, selectedHand, currentAction);
-    logicBox.style.display = 'block';
-
+  if (currentMode === 'rfi') {
+    heroBadge.innerText = SIZING_DATA.rfi[heroPos] || '';
+    sit.innerText = `全員フォールド ➔ あなた (${heroPos}) | 選択: ${selectedHand}`;
+    treeNavBox.style.display = (heroPos !== 'SB' && heroPos !== 'BB') ? 'flex' : 'none';
+    treeNavBtn.innerText = `BTNから3-Betされたら？ (Facing 3-Bet) ➔`;
+  } else if (currentMode === 'facing') {
+    villainBadge.innerText = SIZING_DATA.rfi[villainPos] || '';
+    heroBadge.innerText = heroPos === 'SB' ? SIZING_DATA.facing.SB : (heroPos === 'BB' ? (SIZING_DATA.facing[`BB_${villainPos}`] || '防衛オッズ') : SIZING_DATA.facing.IP);
+    sit.innerText = `${villainPos} オープン vs あなた (${heroPos}) | 選択: ${selectedHand}`;
+    treeNavBox.style.display = 'none';
   } else {
-    sit.innerText = `${openerPos} のオープン vs あなた (${heroPos}) | 選択: ${selectedHand}`;
-    const key = `${openerPos}_${heroPos}`;
-    const data = FACING_DATA[key];
-    if (data) {
-      raiseRange = data['3bet'];
-      callRange = data['call'];
-    }
-
-    if (raiseRange.has(selectedHand)) currentAction = '3-BET';
-    else if (callRange.has(selectedHand)) currentAction = 'CALL';
-    else currentAction = 'FOLD';
-
-    if (currentAction === '3-BET') {
-      badge.className = 'badge raise';
-      badge.innerText = '3-BET';
-      desc.innerText = `${openerPos} に対してリレイズ（3-Bet）するレンジです。`;
-    } else if (currentAction === 'CALL') {
-      badge.className = 'badge call';
-      badge.innerText = 'CALL';
-      desc.innerText = `${openerPos} のオープンにコールしてフロップを見に行くレンジです。`;
-    } else {
-      badge.className = 'badge fold';
-      badge.innerText = 'FOLD';
-      desc.innerText = `${openerPos} に対して勝率/オッズが合わないためフォールドします。`;
-    }
-
-    logicText.innerText = getActionLogic('facing', heroPos, openerPos, selectedHand, currentAction);
-    logicBox.style.display = 'block';
+    heroBadge.innerText = SIZING_DATA.rfi[heroPos] || '';
+    const isIp = POSITIONS.indexOf(heroPos) > POSITIONS.indexOf(villainPos);
+    villainBadge.innerText = SIZING_DATA.facing3bet[isIp ? 'IP' : 'OOP'];
+    sit.innerText = `あなた (${heroPos}) オープン ➔ ${villainPos} が3-Bet！ | 選択: ${selectedHand}`;
+    treeNavBox.style.display = 'none';
   }
 
+  const act = evaluateGtoAction(currentMode, villainPos, heroPos, selectedHand);
+  
+  if (act === 'R') {
+    badge.className = 'badge raise';
+    badge.innerText = currentMode === 'facing3bet' ? '4-BET' : (currentMode === 'facing' ? '3-BET' : 'RAISE');
+    desc.innerText = `高頻度・ピュアでレイズを選択します。`;
+  } else if (act === 'C') {
+    badge.className = 'badge call';
+    badge.innerText = 'CALL';
+    desc.innerText = `コールを選択し、フロップへ進みます。`;
+  } else if (act === 'RF') {
+    badge.className = 'badge mixed';
+    badge.innerText = 'RAISE / FOLD';
+    desc.innerText = `混合頻度（ブラフやマージナル参加の境界線ハンド）。`;
+  } else if (act === 'RC') {
+    badge.className = 'badge mixed';
+    badge.innerText = 'RAISE / CALL';
+    desc.innerText = `バリューレイズとコールを半々で使い分ける境界線。`;
+  } else if (act === 'CF') {
+    badge.className = 'badge mixed';
+    badge.innerText = 'CALL / FOLD';
+    desc.innerText = `オッズとテーブル状況に応じたマージナルコール枠。`;
+  } else {
+    badge.className = 'badge fold';
+    badge.innerText = 'FOLD';
+    desc.innerText = `EVが見合わないためフォールドが正解です。`;
+  }
+
+  logicText.innerHTML = getGtoInsight(selectedHand, currentMode, villainPos, heroPos, act);
+  logicBox.style.display = 'block';
+
+  // マトリックス全セル描画
   for (let r = 0; r < 13; r++) {
     for (let c = 0; c < 13; c++) {
       const h = ALL_HANDS_MATRIX[r][c];
-      const el = document.getElementById(`chk_${h}`);
-      let colorCls = 'act-fold';
-      if (raiseRange.has(h)) colorCls = 'act-raise';
-      else if (callRange.has(h)) colorCls = 'act-call';
-      
-      el.className = `matrix-cell ${colorCls} ${h === selectedHand ? 'selected' : ''}`;
+      const cellAct = evaluateGtoAction(currentMode, villainPos, heroPos, h);
+      let cls = 'act-fold';
+      if (cellAct === 'R') cls = 'act-raise';
+      else if (cellAct === 'C') cls = 'act-call';
+      else if (cellAct === 'RF') cls = 'act-rf';
+      else if (cellAct === 'RC') cls = 'act-rc';
+      else if (cellAct === 'CF') cls = 'act-cf';
+
+      document.getElementById(`chk_${h}`).className = `matrix-cell ${cls} ${h === selectedHand ? 'selected' : ''}`;
     }
   }
 }
 
-function initTableMatrix() {
-  const container = document.getElementById('tableMatrix');
-  container.innerHTML = '';
-  for (let r = 0; r < 13; r++) {
-    for (let c = 0; c < 13; c++) {
-      const hand = ALL_HANDS_MATRIX[r][c];
-      const div = document.createElement('div');
-      div.className = 'matrix-cell target-dim';
-      div.id = `tbl_${hand}`;
-      div.innerText = hand;
-      container.appendChild(div);
+function navigateTree() {
+  if (currentMode === 'rfi') {
+    villainPos = 'BTN';
+    setMode('facing3bet');
+  }
+}
+
+// ==========================================
+// ピンチズーム＆パン機能
+// ==========================================
+const zoomState = {
+  checker: { scale: 1.0, x: 0, y: 0, isDragging: false }
+};
+
+function clampTranslation(st, wrapper) {
+  if (st.scale <= 1.0) {
+    st.scale = 1.0; st.x = 0; st.y = 0; return;
+  }
+  const maxMoveX = wrapper.clientWidth * (st.scale - 1);
+  const maxMoveY = wrapper.clientHeight * (st.scale - 1);
+  st.x = Math.min(0, Math.max(-maxMoveX, st.x));
+  st.y = Math.min(0, Math.max(-maxMoveY, st.y));
+}
+
+function applyZoomTransform(targetKey) {
+  const innerId = targetKey === 'checker' ? 'checkerInner' : 'tableInner';
+  const st = zoomState[targetKey];
+  const el = document.getElementById(innerId);
+  if (el) el.style.transform = `translate(${st.x}px, ${st.y}px) scale(${st.scale})`;
+}
+
+function zoomMatrix(targetKey, delta) {
+  const wrapper = document.getElementById('checkerWrapper');
+  const st = zoomState[targetKey];
+  const oldScale = st.scale;
+  const newScale = Math.min(Math.max(oldScale + delta, 1.0), 2.5);
+  if (newScale === oldScale) return;
+
+  const midX = wrapper.clientWidth / 2;
+  const midY = wrapper.clientHeight / 2;
+  st.x = midX - (midX - st.x) * (newScale / oldScale);
+  st.y = midY - (midY - st.y) * (newScale / oldScale);
+  st.scale = newScale;
+
+  clampTranslation(st, wrapper);
+  applyZoomTransform(targetKey);
+}
+
+function resetMatrixZoom(targetKey) {
+  const st = zoomState[targetKey];
+  st.scale = 1.0; st.x = 0; st.y = 0;
+  applyZoomTransform(targetKey);
+}
+
+function setupPinchZoom(wrapperId, innerId, targetKey) {
+  const wrapper = document.getElementById(wrapperId);
+  const st = zoomState[targetKey];
+
+  let startDist = 0, startScale = 1, startTouchX = 0, startTouchY = 0, startX = 0, startY = 0, lastTapTime = 0;
+
+  wrapper.addEventListener('touchstart', (e) => {
+    const rect = wrapper.getBoundingClientRect();
+    if (e.touches.length === 2) {
+      startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      startScale = st.scale;
+      startTouchX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+      startTouchY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+      startX = st.x; startY = st.y;
+    } else if (e.touches.length === 1) {
+      startTouchX = e.touches[0].clientX - rect.left;
+      startTouchY = e.touches[0].clientY - rect.top;
+      startX = st.x; startY = st.y;
+      st.isDragging = false;
+      const now = Date.now();
+      if (now - lastTapTime < 300) resetMatrixZoom(targetKey);
+      lastTapTime = now;
     }
-  }
-}
+  }, { passive: false });
 
-function clearTableHighlights() {
-  document.querySelectorAll('#summaryTable td').forEach(td => td.classList.remove('active-td'));
-  document.querySelectorAll('#summaryTable th').forEach(th => th.classList.remove('active-th'));
-}
+  wrapper.addEventListener('touchmove', (e) => {
+    const rect = wrapper.getBoundingClientRect();
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      if (startDist > 0) {
+        const factor = dist / startDist;
+        const newScale = Math.min(Math.max(startScale * factor, 1.0), 2.5);
+        const currentMidX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+        const currentMidY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+        st.x = currentMidX - ((startTouchX - startX) / startScale) * newScale;
+        st.y = currentMidY - ((startTouchY - startY) / startScale) * newScale;
+        st.scale = newScale;
+        clampTranslation(st, wrapper);
+        applyZoomTransform(targetKey);
+      }
+    } else if (e.touches.length === 1 && st.scale > 1.0) {
+      e.preventDefault();
+      const dx = (e.touches[0].clientX - rect.left) - startTouchX;
+      const dy = (e.touches[0].clientY - rect.top) - startTouchY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) st.isDragging = true;
+      st.x = startX + dx; st.y = startY + dy;
+      clampTranslation(st, wrapper);
+      applyZoomTransform(targetKey);
+    }
+  }, { passive: false });
 
-function onTableCellClick(category, pos, cellElem) {
-  clearTableHighlights();
-  cellElem.classList.add('active-td');
-
-  const rangeStr = TABLE_CELL_DATA[category][pos];
-  const targetSet = parseRange(rangeStr);
-  const catNames = {
-    pocket: 'ポケットペア', suited_a: 'スーテッドA', offsuit_a: 'オフスーツA',
-    offsuit_broad: 'オフスーツブロードウェイ', connector: 'スーテッドコネクタ', suited_kq: 'スーテッドK/Q'
-  };
-
-  const label = document.getElementById('tableHlInfo');
-  if (!rangeStr) {
-    label.innerText = `【${pos}】${catNames[category]} ➔ オープンなし (0コンボ)`;
-  } else {
-    label.innerText = `表示中: 【${pos}】${catNames[category]} [ ${rangeStr} ] ➔ ${targetSet.size}種をハイライト`;
-  }
-
-  highlightTableMatrix(targetSet);
-}
-
-function onTableColClick(pos) {
-  clearTableHighlights();
-  const ths = document.querySelectorAll('#summaryTable th');
-  POSITIONS.forEach((p, idx) => {
-    if (p === pos && ths[idx + 1]) ths[idx + 1].classList.add('active-th');
+  wrapper.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) startDist = 0;
+    setTimeout(() => { st.isDragging = false; }, 50);
   });
-
-  let targetSet = new Set();
-  const label = document.getElementById('tableHlInfo');
-
-  if (pos === 'BB') {
-    const data = FACING_DATA['BTN_BB'];
-    targetSet = new Set([...data['3bet'], ...data['call']]);
-    label.innerText = `表示中: 【BB】vs BTNディフェンス全域 (3bet+Call) ➔ 約55%をハイライト`;
-  } else {
-    targetSet = RFI_DATA[pos] || new Set();
-    const pctMap = { UTG: '~15%', HJ: '~20%', CO: '~27%', BTN: '~43%', SB: '~42%' };
-    label.innerText = `表示中: 【${pos}】全オープンレンジ (${pctMap[pos]}) ➔ ${targetSet.size}種をハイライト`;
-  }
-
-  highlightTableMatrix(targetSet);
 }
 
-function highlightTableMatrix(targetSet) {
-  for (let r = 0; r < 13; r++) {
-    for (let c = 0; c < 13; c++) {
-      const h = ALL_HANDS_MATRIX[r][c];
-      const el = document.getElementById(`tbl_${h}`);
-      if (targetSet.has(h)) {
-        el.className = 'matrix-cell target-hl';
-      } else {
-        el.className = 'matrix-cell target-dim';
-      }
-    }
-  }
-}
-
-function getActionLogic(mode, hero, opener, hand, action) {
-  const isPair = hand.length === 2;
-  const isSuited = hand.endsWith('s');
-  const isOffsuit = hand.endsWith('o');
-  const r1 = hand[0], r2 = hand[1];
-  const isAx = r1 === 'A';
-  const isWheelAx = isAx && ['2','3','4','5'].includes(r2) && isSuited;
-  const isBroadway = ['A','K','Q','J','T'].includes(r1) && ['A','K','Q','J','T'].includes(r2);
-  const diff = RANK_VAL[r1] - RANK_VAL[r2];
-
-  if (mode === 'rfi') {
-    if (action === 'OPEN RAISE') {
-      if (isPair) {
-        if (['A','K','Q','J'].includes(r1)) return '【プレミアムペア】絶対的なバリューハンド。どのポジションからでも100%オープンレイズしてポットを構築します。';
-        if (['T','9','8','7'].includes(r1)) return '【ミドルペア】単体での強さに加え、フロップでセット（約12%）やオーバーペアになる期待値が高く、全ポジションから利益的なオープンです。';
-        return `【ローポケットペア】COやBTNでは全解禁されます。ブラインドをスチールしやすく、マルチウェイを回避できるレイトポジションでのみ高いEVを持ちます。`;
-      }
-      if (isWheelAx) {
-        return '【Aブロッカー＋ホイール発展性】相手のAAやAKのコンボを半減（ブロック）させつつ、ナッツフラッシュやA-2-3-4-5ストレートの発展性があるため、アーリーポジションからでも高いプレイアビリティを発揮します。';
-      }
-      if (isAx && isSuited) {
-        return '【スーテッドA】ナッツフラッシュのドローを常に持ち、Aがヒットした際のキッカー勝負にも耐えうるため、全ポジションで強い参加基準を満たします。';
-      }
-      if (isBroadway && isSuited) {
-        return '【スーテッドブロードウェイ】ナッツ級ストレートやハイフラッシュの発展性があり、トップペア時にも強いキッカーとなるため、全ポジションからオープン可能です。';
-      }
-      if (isBroadway && isOffsuit) {
-        return `【オフスーツブロードウェイ】${hero}のオープン足切りラインを満たしています。フロップでトップペアを作った際のバリューが高く、ブラインド奪取に適しています。`;
-      }
-      if (isSuited && diff === 1) {
-        return `【スーテッドコネクタ】ストレート・フラッシュの複合ドローがつきやすく、ポストフロップで相手にプレッシャーをかけやすいため、${hero}からレンジに組み込まれます。`;
-      }
-      return `${hero}のポジションアドバンテージとブラインドスチールの期待値により、GTOのオープン下限値をクリアしています。`;
-    } else {
-      if (isPair) {
-        return `【ローポケットの足切り】${hero}からは後ろに控えるプレイヤーが多く、3-betを受ける頻度やセットが刺さらなかった際のリスクが上回るためフォールドが正解です（CO以降で解禁）。`;
-      }
-      if (isAx && isSuited) {
-        return `【マージナルAxs】A6s〜A9sはストレート（ホイール）にならず、キッカーも中途半端なため、${hero}のタイトなレンジ基準を満たしません（HJ/COから解禁）。`;
-      }
-      if (isAx && isOffsuit) {
-        return '【キッカー負け（逆支配）リスク】Aヒット時に相手の上位A（AK, AQ, AJ）にスタックを奪われるリスク（リバース・インプライドオッズ）が高く、スチールには不適です。';
-      }
-      if (isOffsuit) {
-        return '【プレイアビリティ不足】オフスーツはスーテッドに比べて勝率が約3〜4%低く、フラッシュの可能性もないため、ポストフロップで戦うのが極めて困難です。';
-      }
-      return `【下限値未満】${hero}からオープンするには勝率・発展性ともに不足しており、長期的にマイナスEVとなるためフォールドします。`;
-    }
-  } else {
-    if (action === '3-BET') {
-      if (['AA','KK','QQ','AKs','AKo'].includes(hand)) {
-        return `【ピュアバリュー3-bet】${opener}のオープンレンジを圧倒する最強クラスのハンド。ポットをプリフロップで拡大し、フロップ前に優位を確定させます。`;
-      }
-      if (isWheelAx) {
-        return `【典型的なブラフ3-bet】Aブロッカーにより${opener}のAA/AKコンボを50%消去し、相手のフォールドを奪いに行きます。コールされてもホイールやナッツフラッシュの発展性が残ります。`;
-      }
-      if (isSuited && (diff === 1 || diff === 2)) {
-        return `【アグレッシブなブラフ/セミバリュー】ボードカバー率を高め、相手のマージナルなハンドを降ろすフォールドエクイティを奪うための3-betです。`;
-      }
-      return `${opener}のオープンレンジに対して優位に立ち、主導権を握るための3-bet推奨ハンドです。`;
-    } else if (action === 'CALL') {
-      if (isPair) {
-        return `【セットマイン＋勝率実現】3-betすると相手の強い手だけに残され弱い手を降ろしてしまうため、フロップを見てセット（約12%）やオーバーペアを狙うフラットコールが最適です。`;
-      }
-      if (hero === 'BB') {
-        return `【ポットオッズと投資済みチップ】BBは既に1bbを支払っており、非常に有利なオッズでコールできます。ポストフロップで勝率を実現しやすいスーテッド/ブロードウェイで広く守ります。`;
-      }
-      return `【IP（インポジション）での勝率実現】フロップ以降に有利なポジション（後番）があるため、強いドローやペアを作りフロップ以降で相手のミスを突くコールが適切です。`;
-    } else {
-      if (isPair) {
-        return `【インプライドオッズ不足】オープン額に対してフロップでセットが刺さる確率（約12%）では投資に見合わず、セットが外れた際にチェックフォールドでチップを失うため捨てます。`;
-      }
-      if (isBroadway && isOffsuit) {
-        return `【ドミネイト（逆支配）の罠】${opener}のレンジにはAK, AQ, AJが大量に含まれており、トップペアができてもキッカー負けで大事故を起こす典型的なハンドです。`;
-      }
-      return `${opener}のオープンレンジに対して勝率・オッズが合わず、フロップ以降も不利な状況が続くためフォールドが正解です。`;
-    }
-  }
-}
-
-const QUIZ_HAND_POOL = [
+// ==========================================
+// クイズ機能
+// ==========================================
+const QUIZ_HANDS = [
   'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22',
-  'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s',
-  'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A5o',
-  'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'K5s', 'KQo', 'KJo', 'KTo', 'K9o',
-  'QJs', 'QTs', 'Q9s', 'Q8s', 'QJo', 'QTo',
-  'JTs', 'J9s', 'J8s', 'JTo',
-  'T9s', 'T8s', '98s', '87s', '76s', '65s', '54s', '86s', '75s'
+  'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A5s', 'A4s', 'A3s', 'A2s',
+  'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'KQo', 'KJo', 'KTo',
+  'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', '54s'
 ];
 
 let quizFilter = 'all';
@@ -772,10 +918,10 @@ let quizState = { streak: 0, correct: 0, total: 0, current: null };
 
 function setQuizFilter(f) {
   quizFilter = f;
-  document.getElementById('fBtnAll').classList.toggle('active', f === 'all');
-  document.getElementById('fBtnRfi').classList.toggle('active', f === 'rfi');
-  document.getElementById('fBtnBb').classList.toggle('active', f === 'bb');
-  document.getElementById('fBtnFacing').classList.toggle('active', f === 'facing');
+  ['All','Rfi','Facing','Bb','4bet','Mix'].forEach(k => {
+    const el = document.getElementById(`fBtn${k}`);
+    if (el) el.classList.toggle('active', f.toLowerCase() === k.toLowerCase());
+  });
   nextQuizQuestion();
 }
 
@@ -783,55 +929,66 @@ function nextQuizQuestion() {
   document.getElementById('feedbackBox').style.display = 'none';
   document.getElementById('quizBtns').style.display = 'grid';
 
-  const hand = QUIZ_HAND_POOL[Math.floor(Math.random() * QUIZ_HAND_POOL.length)];
-  let modeType = '';
+  const hand = QUIZ_HANDS[Math.floor(Math.random() * QUIZ_HANDS.length)];
+  let mode = 'rfi', hPos = 'CO', vPos = 'BTN';
 
-  if (quizFilter === 'rfi') modeType = 'rfi';
-  else if (quizFilter === 'bb') modeType = 'bb';
-  else if (quizFilter === 'facing') modeType = 'facing_non_bb';
-  else {
-    const r = Math.random();
-    if (r < 0.4) modeType = 'rfi';
-    else if (r < 0.7) modeType = 'bb';
-    else modeType = 'facing_non_bb';
-  }
-
-  if (modeType === 'rfi') {
-    const posList = ['UTG', 'HJ', 'CO', 'BTN', 'SB'];
-    const hPos = posList[Math.floor(Math.random() * posList.length)];
-    const correctAct = RFI_DATA[hPos].has(hand) ? 'RAISE' : 'FOLD';
-
-    quizState.current = { mode: 'rfi', hero: hPos, opener: null, hand: hand, correct: correctAct };
-    document.getElementById('quizSit').innerText = `【${hPos}】 全員フォールド ➔ あなたの手番`;
-    document.getElementById('quizHand').innerText = hand;
-    document.getElementById('qBtnCall').style.display = 'none';
-
+  if (quizFilter === 'rfi') {
+    mode = 'rfi';
+    hPos = ['UTG','LJ','CO','BTN','SB'][Math.floor(Math.random() * 5)];
+  } else if (quizFilter === 'bb') {
+    mode = 'facing';
+    hPos = 'BB';
+    vPos = ['UTG','LJ','CO','BTN','SB'][Math.floor(Math.random() * 5)];
+  } else if (quizFilter === 'facing') {
+    mode = 'facing';
+    hPos = ['BTN','SB'][Math.floor(Math.random() * 2)];
+    vPos = ['UTG','CO'][Math.floor(Math.random() * 2)];
+  } else if (quizFilter === 'facing3bet') {
+    mode = 'facing3bet';
+    hPos = ['UTG','CO','BTN'][Math.floor(Math.random() * 3)];
+    vPos = hPos === 'UTG' ? 'LJ' : (hPos === 'CO' ? 'BTN' : 'SB');
   } else {
-    let availableKeys = Object.keys(FACING_DATA);
-    if (modeType === 'bb') availableKeys = availableKeys.filter(k => k.endsWith('_BB'));
-    else availableKeys = availableKeys.filter(k => !k.endsWith('_BB'));
-
-    const key = availableKeys[Math.floor(Math.random() * availableKeys.length)];
-    const [opPos, hPos] = key.split('_');
-    const data = FACING_DATA[key];
-
-    let correctAct = 'FOLD';
-    if (data['3bet'].has(hand)) correctAct = 'RAISE';
-    else if (data['call'].has(hand)) correctAct = 'CALL';
-
-    quizState.current = { mode: 'facing', hero: hPos, opener: opPos, hand: hand, correct: correctAct };
-    document.getElementById('quizSit').innerText = `【${opPos}】オープンレイズ vs あなた【${hPos}】`;
-    document.getElementById('quizHand').innerText = hand;
-    document.getElementById('qBtnCall').style.display = 'block';
+    // all or mix
+    const r = Math.random();
+    if (r < 0.3) {
+      mode = 'rfi'; hPos = ['UTG','CO','BTN','SB'][Math.floor(Math.random() * 4)];
+    } else if (r < 0.65) {
+      mode = 'facing'; hPos = ['BTN','SB','BB'][Math.floor(Math.random() * 3)]; vPos = 'CO';
+    } else {
+      mode = 'facing3bet'; hPos = 'CO'; vPos = 'BTN';
+    }
   }
+
+  const correctGto = evaluateGtoAction(mode, vPos, hPos, hand);
+  let correctCategory = 'FOLD';
+  if (correctGto === 'R') correctCategory = 'RAISE';
+  else if (correctGto === 'C') correctCategory = 'CALL';
+  else if (['RF','RC','CF'].includes(correctGto)) correctCategory = 'MIX';
+
+  quizState.current = { mode, hero: hPos, villain: vPos, hand, correct: correctCategory, rawAct: correctGto };
+
+  let sitText = '';
+  if (mode === 'rfi') sitText = `【${hPos}】 全員フォールド ➔ あなたの手番`;
+  else if (mode === 'facing') sitText = `【${vPos}】オープン vs あなた【${hPos}】`;
+  else sitText = `あなた【${hPos}】オープン ➔ 【${vPos}】が3-Bet！`;
+
+  document.getElementById('quizSit').innerText = sitText;
+  document.getElementById('quizHand').innerText = hand;
 }
 
-function handleQuizAnswer(userAnswer) {
+function handleQuizAnswer(ans) {
   const q = quizState.current;
   if (!q) return;
 
   quizState.total++;
-  const isCorrect = userAnswer === q.correct;
+  // 混合ハンドの場合、MIX回答はもちろん、Raise/Callいずれを選んでも部分正解として許容
+  let isCorrect = (ans === q.correct);
+  if (!isCorrect && q.correct === 'MIX') {
+    if (q.rawAct === 'RF' && (ans === 'RAISE' || ans === 'FOLD')) isCorrect = true;
+    if (q.rawAct === 'RC' && (ans === 'RAISE' || ans === 'CALL')) isCorrect = true;
+    if (q.rawAct === 'CF' && (ans === 'CALL' || ans === 'FOLD')) isCorrect = true;
+  }
+
   if (isCorrect) {
     quizState.correct++;
     quizState.streak++;
@@ -847,26 +1004,29 @@ function handleQuizAnswer(userAnswer) {
   const fbStatus = document.getElementById('feedbackStatus');
   const fbDesc = document.getElementById('feedbackDesc');
   const fbLogic = document.getElementById('feedbackLogic');
+  const fbHandBadge = document.getElementById('feedbackHandBadge');
 
   document.getElementById('quizBtns').style.display = 'none';
   fbBox.className = `feedback-box ${isCorrect ? 'correct' : 'wrong'}`;
   fbStatus.innerText = isCorrect ? '正解！ 🎯' : '不正解... ❌';
 
-  const actLabel = q.correct === 'RAISE' ? (q.mode === 'rfi' ? 'OPEN RAISE' : '3-BET') : q.correct;
-  fbDesc.innerText = `正解アクション: 【 ${actLabel} 】`;
-  fbLogic.innerText = getActionLogic(q.mode, q.hero, q.opener, q.hand, actLabel);
+  let badgeCls = 'act-fold';
+  if (q.rawAct === 'R') badgeCls = 'act-raise';
+  else if (q.rawAct === 'C') badgeCls = 'act-call';
+  else if (q.rawAct === 'RF') badgeCls = 'act-rf';
+  else if (q.rawAct === 'RC') badgeCls = 'act-rc';
+  else if (q.rawAct === 'CF') badgeCls = 'act-cf';
+
+  fbHandBadge.className = `feedback-hand-badge ${badgeCls}`;
+  fbHandBadge.innerText = q.hand;
+
+  fbDesc.innerText = `GTO正解: 【 ${q.correct === 'MIX' ? `${q.rawAct} (混合戦略)` : q.correct} 】`;
+  fbLogic.innerHTML = getGtoInsight(q.hand, q.mode, q.villain, q.hero, q.rawAct);
 
   fbBox.style.display = 'block';
 }
 
-window.onload = () => {
-  initUI();
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.log('SW registration failed:', err);
-    });
-  }
-};
+window.onload = initUI;
 </script>
 </body>
 </html>
