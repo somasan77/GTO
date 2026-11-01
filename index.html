@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>6-Max GTO Trainer</title>
 
-<!-- PWA / 全画面表示設定 -->
+<!-- PWA / アプリ化正規設定 -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#121214">
-<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"6-Max GTO Trainer","short_name":"GTO Trainer","start_url":"./","display":"standalone","background_color":"%23121214","theme_color":"%23121214"}'>
+<link rel="manifest" href="./manifest.json">
 
 <style>
   :root {
@@ -28,7 +28,10 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { background: var(--bg); color: var(--text); padding: 10px; padding-bottom: 40px; }
-  h1 { font-size: 1.05rem; text-align: center; margin-bottom: 10px; color: var(--muted); font-weight: 600; }
+  
+  .header-wrap { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  h1 { font-size: 1.05rem; color: var(--muted); font-weight: 600; margin: 0; }
+  .fs-btn { background: #272730; border: 1px solid #3a3a48; color: var(--muted); font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
 
   /* タブ */
   .tabs { display: flex; background: #272730; border-radius: 10px; padding: 4px; margin-bottom: 12px; gap: 4px; }
@@ -134,7 +137,10 @@
 </head>
 <body>
 
-<h1>6-MAX 100bb GTO TRAINER</h1>
+<div class="header-wrap">
+  <h1>6-MAX 100bb GTO TRAINER</h1>
+  <button class="fs-btn" onclick="toggleFullScreen()">全画面表示</button>
+</div>
 
 <!-- 4分割タブ -->
 <div class="tabs">
@@ -378,4 +384,489 @@ const FACING_DATA = {
   'CO_BB': { '3bet': parseRange("TT+, AJs+, AQo+, A2s-A5s, KJs, T8s, 86s, 65s"), 'call': parseRange("22-99, A2s-ATs, K2s-KTs, Q4s+, J6s+, T6s+, 96s+, 85s+, 74s+, 63s+, 53s+, 43s, A8o-AJo, K9o+, Q9o+, J9o+, T8o+, 98o, 87o") },
 
   'BTN_SB': { '3bet': parseRange("55+, A2s+, K9s+, Q9s+, J9s+, T8s+, 97s+, 87s, 76s, 65s, 54s, A9o+, KJo+, QJo"), 'call': new Set() },
-  'BTN_BB': { '3bet': parseRange("88+, ATs+, A2s-A5s, KTs+, QTs, JTs, 86s, 75s, 64s, 53s, AJo
+  'BTN_BB': { '3bet': parseRange("88+, ATs+, A2s-A5s, KTs+, QTs, JTs, 86s, 75s, 64s, 53s, AJo+, KQo"), 'call': parseRange("22-77, A6s-A9s, K2s-K9s, Q2s+, J2s+, T2s+, 94s+, 83s+, 73s+, 62s+, 52s+, 42s+, 32s, A2o-ATo, K4o+, Q6o+, J7o+, T7o+, 97o+, 86o+, 75o+, 65o") },
+
+  'SB_BB': { '3bet': parseRange("88+, ATs+, A2s-A5s, KJs+, QJs, JTs, 97s, 86s, 75s, 64s, 53s, AJo+, KQo"), 'call': parseRange("22-77, A6s-A9s, K2s-KTs, Q2s+, J2s+, T2s+, 92s+, 82s+, 72s+, 62s+, 52s+, 42s+, 32s, A2o-ATo, K5o+, Q7o+, J7o+, T7o+, 97o+, 86o+, 75o+, 65o") }
+};
+
+const TABLE_CELL_DATA = {
+  pocket: { UTG: "66+", HJ: "44+", CO: "22+", BTN: "22+", SB: "22+", BB: "22+" },
+  suited_a: { UTG: "A2s-A5s, ATs+", HJ: "A2s-A5s, A8s+", CO: "A2s+", BTN: "A2s+", SB: "A2s+", BB: "A2s+" },
+  offsuit_a: { UTG: "AQo+", HJ: "AJo+", CO: "ATo+", BTN: "A2o+", SB: "A4o+", BB: "A2o+" },
+  offsuit_broad: { UTG: "", HJ: "KQo", CO: "KTo+, QTo+, JTo", BTN: "K7o+, Q8o+, J8o+", SB: "K8o+, Q9o+, J8o+, T8o+", BB: "K4o+, Q6o+, J7o+, T7o+, 87o+" },
+  connector: { UTG: "87s+", HJ: "65s+", CO: "54s+", BTN: "43s+", SB: "43s+", BB: "32s+" },
+  suited_kq: { UTG: "KTs+", HJ: "K9s+", CO: "K5s+", BTN: "K2s+", SB: "K2s+, Q4s+", BB: "K2s+, Q2s+" }
+};
+
+let currentMode = 'rfi';
+let heroPos = 'UTG';
+let openerPos = 'UTG';
+let selectedHand = 'AKs';
+
+const ALL_HANDS_MATRIX = [];
+for (let r = 0; r < 13; r++) {
+  const row = [];
+  for (let c = 0; c < 13; c++) {
+    if (r === c) row.push(GRID_RANKS[r] + GRID_RANKS[c]);
+    else if (r < c) row.push(GRID_RANKS[r] + GRID_RANKS[c] + 's');
+    else row.push(GRID_RANKS[c] + GRID_RANKS[r] + 'o');
+  }
+  ALL_HANDS_MATRIX.push(row);
+}
+
+function initUI() {
+  renderPosButtons();
+  initCheckerMatrix();
+  initTableMatrix();
+  updateChecker();
+}
+
+function toggleFullScreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      alert("全画面表示への切り替えがサポートされていません");
+    });
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('tabRfi').classList.toggle('active', mode === 'rfi');
+  document.getElementById('tabFacing').classList.toggle('active', mode === 'facing');
+  document.getElementById('tabQuiz').classList.toggle('active', mode === 'quiz');
+  document.getElementById('tabTable').classList.toggle('active', mode === 'table');
+
+  document.getElementById('checkerScreen').style.display = (mode === 'rfi' || mode === 'facing') ? 'block' : 'none';
+  document.getElementById('quizScreen').style.display = mode === 'quiz' ? 'block' : 'none';
+  document.getElementById('tableScreen').style.display = mode === 'table' ? 'block' : 'none';
+
+  if (mode === 'rfi' || mode === 'facing') {
+    document.getElementById('openerSection').style.display = mode === 'facing' ? 'block' : 'none';
+    document.getElementById('heroLabel').innerText = mode === 'facing' ? '2. あなたのポジション (Hero)' : 'あなたのポジション';
+    document.getElementById('lgCallWrap').style.display = mode === 'facing' ? 'flex' : 'none';
+    document.getElementById('lgRaiseText').innerText = mode === 'facing' ? '3-BET' : 'RAISE';
+    if (mode === 'facing' && heroPos === 'UTG') heroPos = 'BTN';
+    renderPosButtons();
+    updateChecker();
+  } else if (mode === 'quiz') {
+    nextQuizQuestion();
+  } else if (mode === 'table') {
+    onTableColClick('UTG');
+  }
+}
+
+function renderPosButtons() {
+  const heroGrid = document.getElementById('heroGrid');
+  heroGrid.innerHTML = '';
+  POSITIONS.forEach(pos => {
+    const btn = document.createElement('button');
+    btn.className = `pos-btn ${pos === heroPos ? 'active' : ''}`;
+    btn.innerText = pos;
+    if (currentMode === 'facing' && pos === 'UTG') btn.disabled = true;
+    btn.onclick = () => {
+      heroPos = pos;
+      if (currentMode === 'facing' && POSITIONS.indexOf(openerPos) >= POSITIONS.indexOf(heroPos)) {
+        openerPos = POSITIONS[POSITIONS.indexOf(heroPos) - 1];
+      }
+      renderPosButtons();
+      updateChecker();
+    };
+    heroGrid.appendChild(btn);
+  });
+
+  if (currentMode === 'facing') {
+    const openerGrid = document.getElementById('openerGrid');
+    openerGrid.innerHTML = '';
+    const heroIdx = POSITIONS.indexOf(heroPos);
+    POSITIONS.slice(0, 5).forEach(pos => {
+      const btn = document.createElement('button');
+      btn.className = `pos-btn ${pos === openerPos ? 'active' : ''}`;
+      btn.innerText = pos;
+      if (POSITIONS.indexOf(pos) >= heroIdx) btn.disabled = true;
+      btn.onclick = () => {
+        openerPos = pos;
+        renderPosButtons();
+        updateChecker();
+      };
+      openerGrid.appendChild(btn);
+    });
+  }
+}
+
+function initCheckerMatrix() {
+  const container = document.getElementById('checkerMatrix');
+  container.innerHTML = '';
+  for (let r = 0; r < 13; r++) {
+    for (let c = 0; c < 13; c++) {
+      const hand = ALL_HANDS_MATRIX[r][c];
+      const div = document.createElement('div');
+      div.className = 'matrix-cell';
+      div.id = `chk_${hand}`;
+      div.innerText = hand;
+      div.onclick = () => {
+        selectedHand = hand;
+        updateChecker();
+      };
+      container.appendChild(div);
+    }
+  }
+}
+
+function updateChecker() {
+  const isRfi = currentMode === 'rfi';
+  const badge = document.getElementById('actionBadge');
+  const desc = document.getElementById('actionDesc');
+  const sit = document.getElementById('sitLabel');
+  const logicBox = document.getElementById('logicBox');
+  const logicText = document.getElementById('logicText');
+
+  let raiseRange = new Set();
+  let callRange = new Set();
+  let currentAction = 'FOLD';
+
+  if (isRfi) {
+    sit.innerText = `全員フォールド → あなた (${heroPos}) | 選択: ${selectedHand}`;
+    if (heroPos === 'BB') {
+      badge.className = 'badge walk';
+      badge.innerText = 'WALK';
+      desc.innerText = '全員フォールドしたため、BBはアクション不要でポットを獲得します。';
+      logicBox.style.display = 'none';
+      for (let r = 0; r < 13; r++) {
+        for (let c = 0; c < 13; c++) {
+          const h = ALL_HANDS_MATRIX[r][c];
+          const el = document.getElementById(`chk_${h}`);
+          el.className = `matrix-cell act-walk ${h === selectedHand ? 'selected' : ''}`;
+        }
+      }
+      return;
+    }
+
+    raiseRange = RFI_DATA[heroPos] || new Set();
+    const isRaise = raiseRange.has(selectedHand);
+    currentAction = isRaise ? 'OPEN RAISE' : 'FOLD';
+
+    badge.className = isRaise ? 'badge raise' : 'badge fold';
+    badge.innerText = currentAction;
+    desc.innerText = isRaise ? `${heroPos} の標準オープンレンジ内です（2.0〜2.5bbレイズ）。` : `${heroPos} のオープン基準を満たしていません。`;
+    logicText.innerText = getActionLogic('rfi', heroPos, null, selectedHand, currentAction);
+    logicBox.style.display = 'block';
+
+  } else {
+    sit.innerText = `${openerPos} のオープン vs あなた (${heroPos}) | 選択: ${selectedHand}`;
+    const key = `${openerPos}_${heroPos}`;
+    const data = FACING_DATA[key];
+    if (data) {
+      raiseRange = data['3bet'];
+      callRange = data['call'];
+    }
+
+    if (raiseRange.has(selectedHand)) currentAction = '3-BET';
+    else if (callRange.has(selectedHand)) currentAction = 'CALL';
+    else currentAction = 'FOLD';
+
+    if (currentAction === '3-BET') {
+      badge.className = 'badge raise';
+      badge.innerText = '3-BET';
+      desc.innerText = `${openerPos} に対してリレイズ（3-Bet）するレンジです。`;
+    } else if (currentAction === 'CALL') {
+      badge.className = 'badge call';
+      badge.innerText = 'CALL';
+      desc.innerText = `${openerPos} のオープンにコールしてフロップを見に行くレンジです。`;
+    } else {
+      badge.className = 'badge fold';
+      badge.innerText = 'FOLD';
+      desc.innerText = `${openerPos} に対して勝率/オッズが合わないためフォールドします。`;
+    }
+
+    logicText.innerText = getActionLogic('facing', heroPos, openerPos, selectedHand, currentAction);
+    logicBox.style.display = 'block';
+  }
+
+  for (let r = 0; r < 13; r++) {
+    for (let c = 0; c < 13; c++) {
+      const h = ALL_HANDS_MATRIX[r][c];
+      const el = document.getElementById(`chk_${h}`);
+      let colorCls = 'act-fold';
+      if (raiseRange.has(h)) colorCls = 'act-raise';
+      else if (callRange.has(h)) colorCls = 'act-call';
+      
+      el.className = `matrix-cell ${colorCls} ${h === selectedHand ? 'selected' : ''}`;
+    }
+  }
+}
+
+function initTableMatrix() {
+  const container = document.getElementById('tableMatrix');
+  container.innerHTML = '';
+  for (let r = 0; r < 13; r++) {
+    for (let c = 0; c < 13; c++) {
+      const hand = ALL_HANDS_MATRIX[r][c];
+      const div = document.createElement('div');
+      div.className = 'matrix-cell target-dim';
+      div.id = `tbl_${hand}`;
+      div.innerText = hand;
+      container.appendChild(div);
+    }
+  }
+}
+
+function clearTableHighlights() {
+  document.querySelectorAll('#summaryTable td').forEach(td => td.classList.remove('active-td'));
+  document.querySelectorAll('#summaryTable th').forEach(th => th.classList.remove('active-th'));
+}
+
+function onTableCellClick(category, pos, cellElem) {
+  clearTableHighlights();
+  cellElem.classList.add('active-td');
+
+  const rangeStr = TABLE_CELL_DATA[category][pos];
+  const targetSet = parseRange(rangeStr);
+  const catNames = {
+    pocket: 'ポケットペア', suited_a: 'スーテッドA', offsuit_a: 'オフスーツA',
+    offsuit_broad: 'オフスーツブロードウェイ', connector: 'スーテッドコネクタ', suited_kq: 'スーテッドK/Q'
+  };
+
+  const label = document.getElementById('tableHlInfo');
+  if (!rangeStr) {
+    label.innerText = `【${pos}】${catNames[category]} ➔ オープンなし (0コンボ)`;
+  } else {
+    label.innerText = `表示中: 【${pos}】${catNames[category]} [ ${rangeStr} ] ➔ ${targetSet.size}種をハイライト`;
+  }
+
+  highlightTableMatrix(targetSet);
+}
+
+function onTableColClick(pos) {
+  clearTableHighlights();
+  const ths = document.querySelectorAll('#summaryTable th');
+  POSITIONS.forEach((p, idx) => {
+    if (p === pos && ths[idx + 1]) ths[idx + 1].classList.add('active-th');
+  });
+
+  let targetSet = new Set();
+  const label = document.getElementById('tableHlInfo');
+
+  if (pos === 'BB') {
+    const data = FACING_DATA['BTN_BB'];
+    targetSet = new Set([...data['3bet'], ...data['call']]);
+    label.innerText = `表示中: 【BB】vs BTNディフェンス全域 (3bet+Call) ➔ 約55%をハイライト`;
+  } else {
+    targetSet = RFI_DATA[pos] || new Set();
+    const pctMap = { UTG: '~15%', HJ: '~20%', CO: '~27%', BTN: '~43%', SB: '~42%' };
+    label.innerText = `表示中: 【${pos}】全オープンレンジ (${pctMap[pos]}) ➔ ${targetSet.size}種をハイライト`;
+  }
+
+  highlightTableMatrix(targetSet);
+}
+
+function highlightTableMatrix(targetSet) {
+  for (let r = 0; r < 13; r++) {
+    for (let c = 0; c < 13; c++) {
+      const h = ALL_HANDS_MATRIX[r][c];
+      const el = document.getElementById(`tbl_${h}`);
+      if (targetSet.has(h)) {
+        el.className = 'matrix-cell target-hl';
+      } else {
+        el.className = 'matrix-cell target-dim';
+      }
+    }
+  }
+}
+
+function getActionLogic(mode, hero, opener, hand, action) {
+  const isPair = hand.length === 2;
+  const isSuited = hand.endsWith('s');
+  const isOffsuit = hand.endsWith('o');
+  const r1 = hand[0], r2 = hand[1];
+  const isAx = r1 === 'A';
+  const isWheelAx = isAx && ['2','3','4','5'].includes(r2) && isSuited;
+  const isBroadway = ['A','K','Q','J','T'].includes(r1) && ['A','K','Q','J','T'].includes(r2);
+  const diff = RANK_VAL[r1] - RANK_VAL[r2];
+
+  if (mode === 'rfi') {
+    if (action === 'OPEN RAISE') {
+      if (isPair) {
+        if (['A','K','Q','J'].includes(r1)) return '【プレミアムペア】絶対的なバリューハンド。どのポジションからでも100%オープンレイズしてポットを構築します。';
+        if (['T','9','8','7'].includes(r1)) return '【ミドルペア】単体での強さに加え、フロップでセット（約12%）やオーバーペアになる期待値が高く、全ポジションから利益的なオープンです。';
+        return `【ローポケットペア】COやBTNでは全解禁されます。ブラインドをスチールしやすく、マルチウェイを回避できるレイトポジションでのみ高いEVを持ちます。`;
+      }
+      if (isWheelAx) {
+        return '【Aブロッカー＋ホイール発展性】相手のAAやAKのコンボを半減（ブロック）させつつ、ナッツフラッシュやA-2-3-4-5ストレートの発展性があるため、アーリーポジションからでも高いプレイアビリティを発揮します。';
+      }
+      if (isAx && isSuited) {
+        return '【スーテッドA】ナッツフラッシュのドローを常に持ち、Aがヒットした際のキッカー勝負にも耐えうるため、全ポジションで強い参加基準を満たします。';
+      }
+      if (isBroadway && isSuited) {
+        return '【スーテッドブロードウェイ】ナッツ級ストレートやハイフラッシュの発展性があり、トップペア時にも強いキッカーとなるため、全ポジションからオープン可能です。';
+      }
+      if (isBroadway && isOffsuit) {
+        return `【オフスーツブロードウェイ】${hero}のオープン足切りラインを満たしています。フロップでトップペアを作った際のバリューが高く、ブラインド奪取に適しています。`;
+      }
+      if (isSuited && diff === 1) {
+        return `【スーテッドコネクタ】ストレート・フラッシュの複合ドローがつきやすく、ポストフロップで相手にプレッシャーをかけやすいため、${hero}からレンジに組み込まれます。`;
+      }
+      return `${hero}のポジションアドバンテージとブラインドスチールの期待値により、GTOのオープン下限値をクリアしています。`;
+    } else {
+      if (isPair) {
+        return `【ローポケットの足切り】${hero}からは後ろに控えるプレイヤーが多く、3-betを受ける頻度やセットが刺さらなかった際のリスクが上回るためフォールドが正解です（CO以降で解禁）。`;
+      }
+      if (isAx && isSuited) {
+        return `【マージナルAxs】A6s〜A9sはストレート（ホイール）にならず、キッカーも中途半端なため、${hero}のタイトなレンジ基準を満たしません（HJ/COから解禁）。`;
+      }
+      if (isAx && isOffsuit) {
+        return '【キッカー負け（逆支配）リスク】Aヒット時に相手の上位A（AK, AQ, AJ）にスタックを奪われるリスク（リバース・インプライドオッズ）が高く、スチールには不適です。';
+      }
+      if (isOffsuit) {
+        return '【プレイアビリティ不足】オフスーツはスーテッドに比べて勝率が約3〜4%低く、フラッシュの可能性もないため、ポストフロップで戦うのが極めて困難です。';
+      }
+      return `【下限値未満】${hero}からオープンするには勝率・発展性ともに不足しており、長期的にマイナスEVとなるためフォールドします。`;
+    }
+  } else {
+    if (action === '3-BET') {
+      if (['AA','KK','QQ','AKs','AKo'].includes(hand)) {
+        return `【ピュアバリュー3-bet】${opener}のオープンレンジを圧倒する最強クラスのハンド。ポットをプリフロップで拡大し、フロップ前に優位を確定させます。`;
+      }
+      if (isWheelAx) {
+        return `【典型的なブラフ3-bet】Aブロッカーにより${opener}のAA/AKコンボを50%消去し、相手のフォールドを奪いに行きます。コールされてもホイールやナッツフラッシュの発展性が残ります。`;
+      }
+      if (isSuited && (diff === 1 || diff === 2)) {
+        return `【アグレッシブなブラフ/セミバリュー】ボードカバー率を高め、相手のマージナルなハンドを降ろすフォールドエクイティを奪うための3-betです。`;
+      }
+      return `${opener}のオープンレンジに対して優位に立ち、主導権を握るための3-bet推奨ハンドです。`;
+    } else if (action === 'CALL') {
+      if (isPair) {
+        return `【セットマイン＋勝率実現】3-betすると相手の強い手だけに残され弱い手を降ろしてしまうため、フロップを見てセット（約12%）やオーバーペアを狙うフラットコールが最適です。`;
+      }
+      if (hero === 'BB') {
+        return `【ポットオッズと投資済みチップ】BBは既に1bbを支払っており、非常に有利なオッズでコールできます。ポストフロップで勝率を実現しやすいスーテッド/ブロードウェイで広く守ります。`;
+      }
+      return `【IP（インポジション）での勝率実現】フロップ以降に有利なポジション（後番）があるため、強いドローやペアを作りフロップ以降で相手のミスを突くコールが適切です。`;
+    } else {
+      if (isPair) {
+        return `【インプライドオッズ不足】オープン額に対してフロップでセットが刺さる確率（約12%）では投資に見合わず、セットが外れた際にチェックフォールドでチップを失うため捨てます。`;
+      }
+      if (isBroadway && isOffsuit) {
+        return `【ドミネイト（逆支配）の罠】${opener}のレンジにはAK, AQ, AJが大量に含まれており、トップペアができてもキッカー負けで大事故を起こす典型的なハンドです。`;
+      }
+      return `${opener}のオープンレンジに対して勝率・オッズが合わず、フロップ以降も不利な状況が続くためフォールドが正解です。`;
+    }
+  }
+}
+
+const QUIZ_HAND_POOL = [
+  'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22',
+  'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s',
+  'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A5o',
+  'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'K5s', 'KQo', 'KJo', 'KTo', 'K9o',
+  'QJs', 'QTs', 'Q9s', 'Q8s', 'QJo', 'QTo',
+  'JTs', 'J9s', 'J8s', 'JTo',
+  'T9s', 'T8s', '98s', '87s', '76s', '65s', '54s', '86s', '75s'
+];
+
+let quizFilter = 'all';
+let quizState = { streak: 0, correct: 0, total: 0, current: null };
+
+function setQuizFilter(f) {
+  quizFilter = f;
+  document.getElementById('fBtnAll').classList.toggle('active', f === 'all');
+  document.getElementById('fBtnRfi').classList.toggle('active', f === 'rfi');
+  document.getElementById('fBtnBb').classList.toggle('active', f === 'bb');
+  document.getElementById('fBtnFacing').classList.toggle('active', f === 'facing');
+  nextQuizQuestion();
+}
+
+function nextQuizQuestion() {
+  document.getElementById('feedbackBox').style.display = 'none';
+  document.getElementById('quizBtns').style.display = 'grid';
+
+  const hand = QUIZ_HAND_POOL[Math.floor(Math.random() * QUIZ_HAND_POOL.length)];
+  let modeType = '';
+
+  if (quizFilter === 'rfi') modeType = 'rfi';
+  else if (quizFilter === 'bb') modeType = 'bb';
+  else if (quizFilter === 'facing') modeType = 'facing_non_bb';
+  else {
+    const r = Math.random();
+    if (r < 0.4) modeType = 'rfi';
+    else if (r < 0.7) modeType = 'bb';
+    else modeType = 'facing_non_bb';
+  }
+
+  if (modeType === 'rfi') {
+    const posList = ['UTG', 'HJ', 'CO', 'BTN', 'SB'];
+    const hPos = posList[Math.floor(Math.random() * posList.length)];
+    const correctAct = RFI_DATA[hPos].has(hand) ? 'RAISE' : 'FOLD';
+
+    quizState.current = { mode: 'rfi', hero: hPos, opener: null, hand: hand, correct: correctAct };
+    document.getElementById('quizSit').innerText = `【${hPos}】 全員フォールド ➔ あなたの手番`;
+    document.getElementById('quizHand').innerText = hand;
+    document.getElementById('qBtnCall').style.display = 'none';
+
+  } else {
+    let availableKeys = Object.keys(FACING_DATA);
+    if (modeType === 'bb') availableKeys = availableKeys.filter(k => k.endsWith('_BB'));
+    else availableKeys = availableKeys.filter(k => !k.endsWith('_BB'));
+
+    const key = availableKeys[Math.floor(Math.random() * availableKeys.length)];
+    const [opPos, hPos] = key.split('_');
+    const data = FACING_DATA[key];
+
+    let correctAct = 'FOLD';
+    if (data['3bet'].has(hand)) correctAct = 'RAISE';
+    else if (data['call'].has(hand)) correctAct = 'CALL';
+
+    quizState.current = { mode: 'facing', hero: hPos, opener: opPos, hand: hand, correct: correctAct };
+    document.getElementById('quizSit').innerText = `【${opPos}】オープンレイズ vs あなた【${hPos}】`;
+    document.getElementById('quizHand').innerText = hand;
+    document.getElementById('qBtnCall').style.display = 'block';
+  }
+}
+
+function handleQuizAnswer(userAnswer) {
+  const q = quizState.current;
+  if (!q) return;
+
+  quizState.total++;
+  const isCorrect = userAnswer === q.correct;
+  if (isCorrect) {
+    quizState.correct++;
+    quizState.streak++;
+  } else {
+    quizState.streak = 0;
+  }
+
+  const pct = Math.round((quizState.correct / quizState.total) * 100);
+  document.getElementById('quizStreak').innerText = `連続正解: ${quizState.streak}`;
+  document.getElementById('quizScore').innerText = `スコア: ${quizState.correct} / ${quizState.total} (${pct}%)`;
+
+  const fbBox = document.getElementById('feedbackBox');
+  const fbStatus = document.getElementById('feedbackStatus');
+  const fbDesc = document.getElementById('feedbackDesc');
+  const fbLogic = document.getElementById('feedbackLogic');
+
+  document.getElementById('quizBtns').style.display = 'none';
+  fbBox.className = `feedback-box ${isCorrect ? 'correct' : 'wrong'}`;
+  fbStatus.innerText = isCorrect ? '正解！ 🎯' : '不正解... ❌';
+
+  const actLabel = q.correct === 'RAISE' ? (q.mode === 'rfi' ? 'OPEN RAISE' : '3-BET') : q.correct;
+  fbDesc.innerText = `正解アクション: 【 ${actLabel} 】`;
+  fbLogic.innerText = getActionLogic(q.mode, q.hero, q.opener, q.hand, actLabel);
+
+  fbBox.style.display = 'block';
+}
+
+window.onload = () => {
+  initUI();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.log('SW registration failed:', err);
+    });
+  }
+};
+</script>
+</body>
+</html>
