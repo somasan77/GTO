@@ -1,1047 +1,2065 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>6-MAX / 9-MAX GTO CASH TRAINER (100BB)</title>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#0f1117">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="./icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="GTO Trainer">
-<style>
-  :root {
-    --bg: #0f1117;
-    --card: #181b24;
-    --primary: #3b82f6;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --accent: #f59e0b;
-    --success: #22c55e;
-    --wrong: #f43f5e;
-
-    /* GTO アクションカラー */
-    --c-raise: #ef4444;      /* レイズ / 3-Bet / 4-Bet (赤) */
-    --c-call: #10b981;       /* コール / リンプ (緑) */
-    --c-fold: #1e293b;       /* フォールド (ダークブルー/グレー) */
-    --c-fold-text: #64748b;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 10px; padding-bottom: 50px; }
-  
-  .header-area { text-align: center; margin-bottom: 10px; }
-  h1 { font-size: 1.05rem; color: #f1f5f9; font-weight: 900; letter-spacing: 0.5px; }
-  .subtitle { font-size: 0.68rem; color: #38bdf8; font-weight: 700; margin-top: 2px; }
-
-  /* タブ */
-  .tabs { display: flex; background: #1f2430; border-radius: 10px; padding: 4px; margin-bottom: 10px; gap: 3px; }
-  .tab-btn { flex: 1; padding: 9px 1px; font-size: 0.72rem; border: none; background: transparent; color: var(--muted); font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
-  .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
-
-  .section-label { font-size: 0.73rem; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
-
-  /* 推奨サイズバッジ */
-  .sizing-badge {
-    background: rgba(56, 189, 248, 0.15);
-    border: 1px solid #0284c7;
-    color: #38bdf8;
-    font-size: 0.68rem;
-    padding: 2px 7px;
-    border-radius: 20px;
-    font-weight: 800;
-  }
-
-  /* ポジショングリッド */
-  .pos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 9px; }
-  .pos-btn { padding: 8px 0; border: 1px solid #2e3646; background: var(--card); color: var(--text); font-weight: 800; border-radius: 8px; font-size: 0.8rem; cursor: pointer; text-align: center; }
-  .pos-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-  .pos-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-
-  /* 凡例・ズームコントロール */
-  .legend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .zoom-controls { display: flex; gap: 4px; align-items: center; }
-  .zoom-btn { background: #262c3a; border: 1px solid #3b4457; color: #cbd5e1; font-size: 0.75rem; font-weight: bold; padding: 3px 8px; border-radius: 6px; cursor: pointer; }
-  .zoom-btn:active { background: var(--primary); color: #fff; }
-
-  .legend-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #161922; padding: 6px; border-radius: 8px; font-size: 0.67rem; margin-bottom: 8px; font-weight: 800; text-align: center; border: 1px solid #232936; }
-  .legend-item { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 3px 0; border-radius: 4px; }
-  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
-
-  /* 13×13 レンジマトリックス */
-  .matrix-wrapper {
-    background: var(--card);
-    border: 1px solid #2d3545;
-    border-radius: 12px;
-    padding: 6px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    position: relative;
-    touch-action: none;
-  }
-  .matrix-inner {
-    transform-origin: 0 0;
-    transition: transform 0.05s ease-out;
-    width: 100%;
-    will-change: transform;
-  }
-  .matrix-grid {
-    display: grid;
-    grid-template-columns: repeat(13, 1fr);
-    gap: 1.5px;
-    width: 100%;
-  }
-  .matrix-cell {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(6.5px, 2.05vw, 9.5px);
-    font-weight: 800;
-    border-radius: 2px;
-    cursor: pointer;
-    user-select: none;
-  }
-  .matrix-cell.selected { outline: 2.5px solid #fff; outline-offset: -1px; box-shadow: 0 0 10px rgba(255, 255, 255, 1); z-index: 5; }
-
-  /* アクションカラークラス（純粋＆混合グラデーション） */
-  .act-raise { background: var(--c-raise) !important; color: #fff !important; }
-  .act-call  { background: var(--c-call) !important; color: #fff !important; }
-  .act-fold  { background: var(--c-fold) !important; color: var(--c-fold-text) !important; }
-  
-  /* スプリット（混合頻度）グラデーション */
-  .act-rf { background: linear-gradient(135deg, var(--c-raise) 50%, var(--c-fold) 50%) !important; color: #fff !important; }
-  .act-rc { background: linear-gradient(135deg, var(--c-raise) 50%, var(--c-call) 50%) !important; color: #fff !important; }
-  .act-cf { background: linear-gradient(135deg, var(--c-call) 50%, var(--c-fold) 50%) !important; color: #fff !important; }
-
-  /* 結果カード */
-  .result-card { background: var(--card); border-radius: 12px; padding: 14px; text-align: center; border: 1px solid #2d3545; margin-bottom: 10px; }
-  .badge { display: inline-block; padding: 6px 20px; border-radius: 30px; font-size: 1.2rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; }
-  .badge.raise { background: #ef4444; color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
-  .badge.call { background: #10b981; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
-  .badge.fold { background: #334155; color: #cbd5e1; }
-  .badge.mixed { background: linear-gradient(135deg, #ef4444 50%, #10b981 50%); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
-
-  .result-desc { font-size: 0.82rem; color: #cbd5e1; line-height: 1.45; margin-bottom: 6px; }
-  .situation-label { font-size: 0.74rem; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
-
-  /* ツリー遷移クイックボタン */
-  .tree-nav-box { margin-top: 10px; display: flex; gap: 6px; justify-content: center; }
-  .tree-nav-btn {
-    background: #1e293b;
-    border: 1px solid #3b82f6;
-    color: #93c5fd;
-    font-size: 0.72rem;
-    font-weight: 800;
-    padding: 6px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-  }
-  .tree-nav-btn:active { background: var(--primary); color: #fff; }
-
-  /* GTO動的インサイトボックス */
-  .logic-box { background: #13161f; border-left: 3.5px solid var(--accent); padding: 10px 12px; border-radius: 0 8px 8px 0; text-align: left; font-size: 0.77rem; line-height: 1.5; color: #e2e8f0; margin-top: 8px; }
-  .logic-title { font-weight: 800; color: var(--accent); margin-bottom: 4px; font-size: 0.78rem; display: flex; align-items: center; gap: 4px; }
-  .gto-note-tag { display: inline-block; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #d97706; padding: 1px 5px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; margin-bottom: 4px; }
-
-  /* クイズ画面 */
-  .filter-box { margin-bottom: 10px; }
-  .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .filter-btn { padding: 7px 2px; font-size: 0.7rem; font-weight: 800; background: #1e2430; border: 1px solid #2e3748; color: var(--muted); border-radius: 8px; cursor: pointer; text-align: center; }
-  .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-
-  .quiz-card { background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid #2d3545; text-align: center; }
-  .quiz-score-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
-  .quiz-sit { font-size: 0.85rem; color: #93c5fd; font-weight: 800; margin-bottom: 6px; min-height: 1.2rem; }
-  .quiz-hand { font-size: 2.3rem; font-weight: 900; letter-spacing: 2px; color: #fff; margin-bottom: 14px; }
-  
-  .quiz-btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
-  .quiz-btn { padding: 13px 0; font-size: 0.85rem; font-weight: 900; border: none; border-radius: 10px; color: #fff; cursor: pointer; }
-  .quiz-btn:active { transform: scale(0.97); }
-  .quiz-btn.btn-raise { background: #ef4444; }
-  .quiz-btn.btn-call { background: #10b981; }
-  .quiz-btn.btn-fold { background: #334155; }
-  .quiz-btn.btn-mix { background: linear-gradient(135deg, #ef4444 50%, #10b981 50%); }
-
-  .feedback-box { display: none; padding: 14px; border-radius: 12px; margin-top: 12px; text-align: left; }
-  .feedback-box.correct { background: rgba(34, 197, 94, 0.12); border: 1px solid var(--success); }
-  .feedback-box.wrong { background: rgba(244, 63, 94, 0.12); border: 1px solid var(--wrong); }
-  .feedback-status { font-size: 1.05rem; font-weight: 900; margin-bottom: 8px; text-align: center; }
-  .feedback-box.correct .feedback-status { color: var(--success); }
-  .feedback-box.wrong .feedback-status { color: var(--wrong); }
-
-  .feedback-tile-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 8px 0 12px 0;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
-  }
-  .feedback-hand-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 90px;
-    height: 50px;
-    padding: 0 16px;
-    border-radius: 8px;
-    font-size: 1.6rem;
-    font-weight: 900;
-    letter-spacing: 2px;
-    margin-bottom: 4px;
-    color: #fff;
-  }
-
-  .next-btn { width: 100%; margin-top: 10px; padding: 12px; background: var(--primary); border: none; color: #fff; font-size: 0.9rem; font-weight: 800; border-radius: 8px; cursor: pointer; }
-
-  /* 折りたたみ式（アコーディオン）解説カード */
-  .accordion-card {
-    background: var(--card);
-    border: 1px solid #2d3545;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    overflow: hidden;
-  }
-  .accordion-header {
-    padding: 11px 14px;
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: #93c5fd;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    user-select: none;
-    background: #1a1e2a;
-  }
-  .accordion-header:active { background: #222736; }
-  .accordion-icon { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s ease; }
-  .accordion-card.open .accordion-icon { transform: rotate(180deg); }
-  .accordion-body {
-    display: none;
-    padding: 12px 14px;
-    border-top: 1px solid #2a3142;
-    font-size: 0.75rem;
-    line-height: 1.6;
-    color: #cbd5e1;
-  }
-  .accordion-card.open .accordion-body { display: block; }
-  .accordion-body strong { color: #38bdf8; font-size: 0.78rem; }
-  .guide-list { margin: 6px 0; padding-left: 16px; }
-  .guide-list li { margin-bottom: 4px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ten-Four GTO Poker - 完全日本語オフライン版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #060911;
+            color: #f8fafc;
+            user-select: none;
+            overflow: hidden;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        /* Ten-Fourスタイル エメラルドフェルト */
+        .poker-felt {
+            background: radial-gradient(ellipse at center, #115e38 0%, #093822 64%, #051e12 100%);
+            border: 6px solid #1e293b;
+            box-shadow: inset 0 0 45px rgba(0,0,0,0.85), 0 10px 30px rgba(0,0,0,0.75);
+        }
+        .poker-card {
+            box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+            transition: transform 0.16s ease;
+        }
+        /* 指定カードサイズ厳守 */
+        .card-hero { width: 50px; height: 70px; }
+        .card-board { width: 45px; height: 64px; }
+        .card-ai { width: 35px; height: 49px; }
+        @media (min-width: 640px) {
+            .card-hero { width: 62px; height: 86px; }
+            .card-board { width: 58px; height: 82px; }
+            .card-ai { width: 44px; height: 62px; }
+        }
+        @keyframes dealCard {
+            0% { opacity: 0; transform: translateY(-8px) scale(0.92); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-deal { animation: dealCard 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        /* 現在手番プレイヤーのグロウ */
+        @keyframes turnGlow {
+            0%, 100% { box-shadow: 0 0 0 2px #10b981, 0 0 14px rgba(16,185,129,0.65); }
+            50% { box-shadow: 0 0 0 3px #34d399, 0 0 22px rgba(52,211,153,0.9); }
+        }
+        .seat-turn { animation: turnGlow 1.3s infinite; }
+        /* 直近アグレッサーの強調 */
+        .seat-aggressor { box-shadow: 0 0 0 2px #f43f5e, 0 0 16px rgba(244,63,94,0.45); }
+        /* Foldしたプレイヤーのグレーアウト＆半透明化 */
+        .seat-folded {
+            opacity: 0.38;
+            filter: grayscale(0.92);
+            transform: scale(0.95);
+        }
+        /* 数値入力のスピンボタン非表示 */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+        .range-grid {
+            display: grid;
+            grid-template-columns: repeat(13, minmax(0, 1fr));
+            gap: 2px;
+        }
+        /* スマホ縦画面で中央ボード・隣接パネルと重ならない6座席配置 */
+        .seat-pos-0 { bottom: 3px; left: 50%; transform: translateX(-50%); }
+        .seat-pos-1 { bottom: 18%; left: 3px; }
+        .seat-pos-2 { top: 14%; left: 3px; }
+        .seat-pos-3 { top: 3px; left: 50%; transform: translateX(-50%); }
+        .seat-pos-4 { top: 14%; right: 3px; }
+        .seat-pos-5 { bottom: 18%; right: 3px; }
+        @media (min-width: 640px) {
+            .seat-pos-1 { bottom: 17%; left: 12px; }
+            .seat-pos-2 { top: 14%; left: 12px; }
+            .seat-pos-4 { top: 14%; right: 12px; }
+            .seat-pos-5 { bottom: 17%; right: 12px; }
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    </style>
 </head>
-<body>
+<body class="h-[100dvh] w-screen overflow-hidden flex flex-col bg-slate-950 text-slate-100 select-none">
 
-<div class="header-area">
-  <h1>6-MAX / 9-MAX GTO TRAINER</h1>
-  <div class="subtitle">9max Cash 100BB GTO SOLVER BASED</div>
-</div>
+    <!-- Bicycle (バイシクル) ライダーバック風 インラインSVG定義 -->
+    <svg width="0" height="0" class="absolute pointer-events-none">
+        <defs>
+            <pattern id="bicycle-weave-red" width="6" height="6" patternUnits="userSpaceOnUse">
+                <rect width="6" height="6" fill="#991b1b"/>
+                <path d="M0 3L3 0L6 3L3 6Z" fill="#dc2626" fill-opacity="0.58"/>
+                <circle cx="3" cy="3" r="0.9" fill="#fef2f2" fill-opacity="0.8"/>
+                <circle cx="0" cy="0" r="0.7" fill="#fecaca" fill-opacity="0.55"/>
+                <circle cx="6" cy="0" r="0.7" fill="#fecaca" fill-opacity="0.55"/>
+                <circle cx="0" cy="6" r="0.7" fill="#fecaca" fill-opacity="0.55"/>
+                <circle cx="6" cy="6" r="0.7" fill="#fecaca" fill-opacity="0.55"/>
+            </pattern>
+            <pattern id="bicycle-weave-blue" width="6" height="6" patternUnits="userSpaceOnUse">
+                <rect width="6" height="6" fill="#1e3a8a"/>
+                <path d="M0 3L3 0L6 3L3 6Z" fill="#2563eb" fill-opacity="0.58"/>
+                <circle cx="3" cy="3" r="0.9" fill="#eff6ff" fill-opacity="0.8"/>
+                <circle cx="0" cy="0" r="0.7" fill="#bfdbfe" fill-opacity="0.55"/>
+                <circle cx="6" cy="0" r="0.7" fill="#bfdbfe" fill-opacity="0.55"/>
+                <circle cx="0" cy="6" r="0.7" fill="#bfdbfe" fill-opacity="0.55"/>
+                <circle cx="6" cy="6" r="0.7" fill="#bfdbfe" fill-opacity="0.55"/>
+            </pattern>
+        </defs>
+    </svg>
 
-<!-- タブ -->
-<div class="tabs">
-  <button class="tab-btn active" id="tabRfi" onclick="setMode('rfi')">オープン</button>
-  <button class="tab-btn" id="tabFacing" onclick="setMode('facing')">対オープン</button>
-  <button class="tab-btn" id="tab4bet" onclick="setMode('facing3bet')">対3-Bet (4B)</button>
-  <button class="tab-btn" id="tabQuiz" onclick="setMode('quiz')">🎯 クイズ</button>
-  <button class="tab-btn" id="tabTable" onclick="setMode('table')">📋 レンジ表</button>
-</div>
+    <!-- 上部スリムヘッダー (高さ44px・1行) -->
+    <header class="h-11 shrink-0 bg-slate-900/95 border-b border-slate-800 px-2 sm:px-3 flex items-center justify-between z-40">
+        <div class="flex items-center gap-1.5 min-w-0">
+            <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center font-black text-white shadow text-xs shrink-0">♠</div>
+            <span class="font-black text-xs sm:text-sm tracking-tight text-white truncate">GTO POKER</span>
+            <span id="header-meta-badge" class="text-[10px] sm:text-xs bg-slate-800 text-emerald-400 border border-slate-700 px-2 py-0.5 rounded-full font-bold mono shrink-0">#1 · BTN</span>
+        </div>
 
-<!-- チェッカー画面 -->
-<div id="checkerScreen">
-  <!-- 相手のポジション選択エリア（対オープン／対3-Bet時） -->
-  <div id="villainSection" style="display:none;">
-    <div class="section-label">
-      <span id="villainLabel">相手のポジション</span>
-      <span class="sizing-badge" id="villainSizeBadge">-</span>
-    </div>
-    <div class="pos-grid" id="villainGrid"></div>
-  </div>
+        <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <button onclick="openRangeModal(true)" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 px-2 py-1 rounded-lg text-[11px] sm:text-xs font-bold border border-indigo-500/40 transition flex items-center gap-1">
+                <span>📊</span><span>レンジ</span>
+            </button>
+            <button onclick="openReviewModal(true)" class="bg-rose-600/25 hover:bg-rose-600/40 text-rose-200 px-2 py-1 rounded-lg text-[11px] sm:text-xs font-bold border border-rose-500/40 transition flex items-center gap-1">
+                <span>📝</span><span>復習</span>
+                <span id="mistake-badge" class="bg-rose-600 text-white text-[9px] font-black mono px-1.5 py-0.2 rounded-full">0</span>
+            </button>
+            <button onclick="openCoachModal()" class="bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-200 px-2 py-1 rounded-lg text-[11px] sm:text-xs font-bold border border-emerald-500/40 transition flex items-center gap-1">
+                <span>🧠</span><span>解析</span>
+            </button>
+            <button onclick="openSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded-lg text-[11px] sm:text-xs font-bold border border-slate-700 transition flex items-center gap-1" title="設定">
+                <span>⚙️</span><span>設定</span>
+            </button>
+        </div>
+    </header>
 
-  <div class="section-label">
-    <span id="heroLabel">あなたのポジション (Hero)</span>
-    <span class="sizing-badge" id="heroSizeBadge">-</span>
-  </div>
-  <div class="pos-grid" id="heroGrid"></div>
-
-  <div class="legend-header">
-    <div style="font-size:0.7rem; color:var(--muted);">※ ピンチで拡大 / ダブルタップでリセット</div>
-    <div class="zoom-controls">
-      <button class="zoom-btn" onclick="zoomMatrix('checker', 0.25)">＋</button>
-      <button class="zoom-btn" onclick="zoomMatrix('checker', -0.25)">−</button>
-      <button class="zoom-btn" onclick="resetMatrixZoom('checker')">1x</button>
-    </div>
-  </div>
-
-  <div class="legend-grid" id="checkerLegend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div><span id="lgRaiseText">RAISE</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div><span id="lgCallText">CALL</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#1e293b;"></div><span>FOLD</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#ef4444 50%,#10b981 50%);"></div><span>MIX(頻度)</span></div>
-  </div>
-
-  <!-- ピンチズーム対応ラッパー -->
-  <div class="matrix-wrapper" id="checkerWrapper">
-    <div class="matrix-inner" id="checkerInner">
-      <div class="matrix-grid" id="checkerMatrix"></div>
-    </div>
-  </div>
-
-  <div class="result-card" id="resultBox">
-    <div class="situation-label" id="sitLabel">-</div>
-    <div class="badge fold" id="actionBadge">READY</div>
-    <div class="result-desc" id="actionDesc">上の表からハンドをタップしてください</div>
-
-    <!-- ツリー進行クイックボタン -->
-    <div class="tree-nav-box" id="treeNavBox" style="display:none;">
-      <button class="tree-nav-btn" id="treeNavBtn" onclick="navigateTree()">次のツリー局面へ ➔</button>
-    </div>
-    
-    <div class="logic-box" id="logicBox" style="display:none;">
-      <div class="logic-title">💡 GTOソルバー考察 ＆ 戦略メモ</div>
-      <div id="logicText"></div>
-    </div>
-  </div>
-</div>
-
-<!-- クイズ画面 -->
-<div id="quizScreen" style="display:none;">
-  <div class="filter-box">
-    <div class="section-label">出題範囲フィルター</div>
-    <div class="filter-grid">
-      <button class="filter-btn active" id="fBtnAll" onclick="setQuizFilter('all')">全問ランダム</button>
-      <button class="filter-btn" id="fBtnRfi" onclick="setQuizFilter('rfi')">オープン (RFI)</button>
-      <button class="filter-btn" id="fBtnFacing" onclick="setQuizFilter('facing')">対オープン</button>
-      <button class="filter-btn" id="fBtnBb" onclick="setQuizFilter('bb')">BBディフェンス</button>
-      <button class="filter-btn" id="fBtn4bet" onclick="setQuizFilter('facing3bet')">対3-Bet (4B)</button>
-      <button class="filter-btn" id="fBtnMix" onclick="setQuizFilter('mix')">混合(MIX)頻度</button>
-    </div>
-  </div>
-
-  <div class="quiz-card">
-    <div class="quiz-score-row">
-      <span id="quizStreak">連続正解: 0</span>
-      <span id="quizScore">スコア: 0 / 0 (0%)</span>
-    </div>
-    <div class="quiz-sit" id="quizSit">シチュエーション生成中...</div>
-    <div class="quiz-hand" id="quizHand">---</div>
-
-    <div class="quiz-btn-grid" id="quizBtns">
-      <button class="quiz-btn btn-raise" id="qBtnRaise" onclick="handleQuizAnswer('RAISE')">RAISE</button>
-      <button class="quiz-btn btn-call" id="qBtnCall" onclick="handleQuizAnswer('CALL')">CALL</button>
-      <button class="quiz-btn btn-fold" id="qBtnFold" onclick="handleQuizAnswer('FOLD')">FOLD</button>
-      <button class="quiz-btn btn-mix" id="qBtnMix" onclick="handleQuizAnswer('MIX')">MIX</button>
+    <!-- フォールド時バックグラウンド決着トースト -->
+    <div id="fast-fold-toast" class="hidden fixed top-12 right-3 z-50 bg-slate-950/95 border border-amber-500/80 text-amber-200 px-3 py-1 rounded-xl shadow-2xl text-[11px] font-bold flex items-center gap-1.5 pointer-events-none">
+        <span>⚡</span>
+        <span id="fast-fold-toast-text">前ハンド決着</span>
     </div>
 
-    <div class="feedback-box" id="feedbackBox">
-      <div class="feedback-status" id="feedbackStatus">正解！</div>
+    <!-- メイン領域 -->
+    <main class="max-w-7xl w-full mx-auto flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 p-1.5 sm:p-2.5 overflow-hidden">
 
-      <div class="feedback-tile-area">
-        <div class="feedback-hand-badge" id="feedbackHandBadge">---</div>
-      </div>
+        <!-- 左カラム: 6-Max テーブル + 下部固定アクションドック -->
+        <section class="lg:col-span-8 flex flex-col h-full min-h-0 gap-1.5 justify-between">
 
-      <div class="result-desc" id="feedbackDesc" style="font-weight:bold; font-size:0.9rem; text-align:center;"></div>
-      <div class="logic-box" style="margin-top:8px;">
-        <div class="logic-title">💡 GTO解説</div>
-        <div id="feedbackLogic"></div>
-      </div>
-      <button class="next-btn" onclick="nextQuizQuestion()">次の問題へ ➔</button>
+            <!-- 6-Max 縦長スタジアム型ポーカーテーブル -->
+            <div class="relative w-full flex-1 min-h-0 poker-felt rounded-[40px] sm:rounded-[150px] flex flex-col items-center justify-center p-1.5 select-none overflow-hidden">
+
+                <!-- 🚨 GTOミスプレイ即時ハイライト警告バナー (テーブル上部ポップアップ) -->
+                <div id="gto-mistake-banner" class="hidden absolute top-2 left-2 right-2 sm:left-8 sm:right-8 z-40 bg-slate-950/95 border-2 border-rose-500 rounded-2xl p-2.5 shadow-2xl backdrop-blur-md">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span id="banner-severity" class="bg-rose-600 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md">🚨 GTO重大ミス！</span>
+                            <span id="banner-vs-text" class="text-[11px] sm:text-xs font-extrabold text-rose-200 mono">あなた: Call vs GTO推奨: Fold 100%</span>
+                            <span id="banner-ev-loss" class="text-[10px] sm:text-xs font-black text-amber-400 mono bg-slate-900 px-1.5 py-0.5 rounded border border-amber-500/40">EVロス: -0.85BB</span>
+                        </div>
+                        <button onclick="hideMistakeBanner()" class="text-slate-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded bg-slate-800">✕</button>
+                    </div>
+                    <p id="banner-reason" class="text-[11px] text-slate-300 mt-1 leading-snug"></p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <button onclick="openBannerRange()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg shadow transition">📊 今のスポットのレンジ表</button>
+                        <button onclick="hideMistakeBanner(); openReviewModal(true);" class="bg-rose-700 hover:bg-rose-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg shadow transition">📝 ミス復習モーダル</button>
+                    </div>
+                </div>
+
+                <!-- テーブル中央: 上段POT・中段コミュニティカード5枚・下段ストリート名/勝者表示 -->
+                <div class="flex flex-col items-center justify-center z-10 max-w-full px-1 pointer-events-none">
+                    <div class="bg-slate-950/90 border border-amber-500/40 px-3 py-0.5 rounded-full flex items-center gap-1.5 shadow-lg mb-1">
+                        <span class="text-[10px] text-slate-400 font-bold">POT</span>
+                        <span id="pot-amount" class="text-xs sm:text-base font-black text-amber-400 mono">1.5BB</span>
+                    </div>
+
+                    <div id="board-container" class="flex items-center justify-center gap-1 sm:gap-1.5 my-0.5 min-h-[64px] sm:min-h-[82px]"></div>
+
+                    <div id="table-street-label" class="mt-1 bg-slate-950/85 border border-emerald-500/35 text-emerald-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide shadow text-center truncate max-w-[240px] sm:max-w-md">
+                        プリフロップ
+                    </div>
+                </div>
+
+                <!-- 6プレイヤー座席 -->
+                <div id="seat-0" class="absolute seat-pos-0 flex flex-col items-center z-20"></div>
+                <div id="seat-1" class="absolute seat-pos-1 flex flex-col items-center z-20"></div>
+                <div id="seat-2" class="absolute seat-pos-2 flex flex-col items-center z-20"></div>
+                <div id="seat-3" class="absolute seat-pos-3 flex flex-col items-center z-20"></div>
+                <div id="seat-4" class="absolute seat-pos-4 flex flex-col items-center z-20"></div>
+                <div id="seat-5" class="absolute seat-pos-5 flex flex-col items-center z-20"></div>
+            </div>
+
+            <!-- 下部アクションドック (常時表示・スクロール不要) -->
+            <div class="shrink-0 bg-slate-900/95 border border-slate-800 rounded-2xl p-1.5 sm:p-2.5 shadow-xl flex flex-col gap-1.5">
+
+                <!-- ベットサイズ選択バー (実用プリセット + 直接BBフリー入力 & ±ボタン) -->
+                <div id="bet-size-bar" class="flex items-center justify-between gap-1.5 bg-slate-950/80 px-1.5 sm:px-2.5 py-1.5 rounded-xl border border-slate-800/90">
+                    <!-- 左側: ストリート別動的プリセットボタン群 -->
+                    <div id="bet-preset-buttons" class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+                        <!-- JSでプリフロップ用(最小/2.5BB/3BB/3x/Pot/All-in) と ポストフロップ用(最小/33%/50%/75%/100%/All-in) を自動切替 -->
+                    </div>
+
+                    <!-- 右側: - / フリー数値入力(BB) / + -->
+                    <div class="flex items-center gap-1 shrink-0 ml-auto bg-slate-900 border border-slate-700 rounded-xl p-0.5">
+                        <button type="button" onclick="stepBetAmount(-0.5)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-black text-xs sm:text-sm flex items-center justify-center transition">−</button>
+                        <div class="flex items-center px-1">
+                            <input type="number" id="bet-input" min="1" max="100" step="0.5" value="2.5"
+                                oninput="onBetInputChange(this.value)"
+                                onblur="onBetInputBlur()"
+                                class="w-11 sm:w-14 bg-transparent text-amber-400 font-black mono text-xs sm:text-sm text-right focus:outline-none"
+                                aria-label="ベット額(BB)">
+                            <span class="text-[10px] sm:text-xs font-bold text-slate-400 mono ml-0.5">BB</span>
+                        </div>
+                        <button type="button" onclick="stepBetAmount(0.5)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-black text-xs sm:text-sm flex items-center justify-center transition">＋</button>
+                    </div>
+                </div>
+
+                <!-- メインアクションボタン3つ -->
+                <div class="grid grid-cols-3 gap-2" id="action-buttons-grid">
+                    <button id="btn-fold" onclick="heroAction('fold')" class="bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-200 border border-slate-700 rounded-xl py-2 sm:py-2.5 px-2 font-black text-xs sm:text-sm transition flex flex-col items-center justify-center shadow">
+                        <span>フォールド</span>
+                        <span class="text-[10px] text-slate-400 font-semibold mono">Fold</span>
+                    </button>
+
+                    <button id="btn-call" onclick="heroAction('call')" class="bg-emerald-700 hover:bg-emerald-600 active:scale-[0.98] text-white border border-emerald-500 rounded-xl py-2 sm:py-2.5 px-2 font-black text-xs sm:text-sm transition flex flex-col items-center justify-center shadow-lg">
+                        <span id="btn-call-title">コール</span>
+                        <span id="btn-call-sub" class="text-[10px] sm:text-[11px] text-emerald-100 font-bold mono">1BB</span>
+                    </button>
+
+                    <button id="btn-raise" onclick="heroAction('raise')" class="bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 active:scale-[0.98] text-white border border-rose-400/60 rounded-xl py-2 sm:py-2.5 px-2 font-black text-xs sm:text-sm transition flex flex-col items-center justify-center shadow-lg">
+                        <span id="btn-raise-title">レイズ</span>
+                        <span id="btn-raise-sub" class="text-[10px] sm:text-[11px] text-rose-100 font-bold mono">2.5BB</span>
+                    </button>
+                </div>
+
+                <!-- ハンド決着後の次ハンド進行バー -->
+                <div id="next-hand-bar" class="hidden">
+                    <button onclick="startNewHand()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black py-2.5 rounded-xl text-sm sm:text-base shadow-lg transition flex items-center justify-center gap-2">
+                        <span>🃏 次のハンドへ進む</span>
+                        <span class="text-[11px] bg-slate-950/20 px-2 py-0.5 rounded mono hidden sm:inline">[Space]</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右カラム (PC用): リアルタイムGTOコーチ＆履歴 -->
+        <aside class="hidden lg:flex lg:col-span-4 flex-col gap-2.5 h-full min-h-0 overflow-hidden">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col gap-2.5 shrink-0">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <h2 class="font-black text-sm text-white">GTO リアルタイム解析コーチ</h2>
+                    </div>
+                    <button onclick="openRangeModal(true)" class="text-[11px] bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded font-bold transition">
+                        🎯 現況レンジ表
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div>
+                        <div class="text-[10px] text-slate-400">ハンド表記</div>
+                        <div id="gto-hand-code" class="text-base font-black text-amber-400 mono mt-0.5">AKs</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400">推定エクイティ</div>
+                        <div id="gto-equity" class="text-base font-black text-emerald-400 mono mt-0.5">64%</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400">必要勝率(オッズ)</div>
+                        <div id="gto-pot-odds" class="text-base font-black text-sky-400 mono mt-0.5">25%</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 text-xs flex flex-col gap-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">シチュエーション:</span>
+                        <span id="gto-spot-label" class="font-bold text-indigo-300">BTN オープン判断 (RFI)</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">ボード質感 / 役:</span>
+                        <span id="gto-board-texture" class="font-bold text-amber-300">プリフロップ</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-[11px] font-bold mb-1">
+                        <span class="text-rose-400">Raise/Bet: <span id="gto-freq-raise" class="mono">85%</span></span>
+                        <span class="text-emerald-400">Call/Check: <span id="gto-freq-call" class="mono">15%</span></span>
+                        <span class="text-slate-400">Fold: <span id="gto-freq-fold" class="mono">0%</span></span>
+                    </div>
+                    <div class="w-full h-3.5 rounded-lg overflow-hidden flex bg-slate-800 border border-slate-700">
+                        <div id="gto-bar-raise" class="bg-rose-500 h-full transition-all duration-300" style="width: 85%"></div>
+                        <div id="gto-bar-call" class="bg-emerald-500 h-full transition-all duration-300" style="width: 15%"></div>
+                        <div id="gto-bar-fold" class="bg-slate-700 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="gto-explanation" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-300 leading-relaxed">
+                    ポジション優位を活かして Raise 2.5BB でオープンするのがGTO推奨です。
+                </div>
+
+                <div id="gto-feedback-box" class="hidden rounded-xl p-2 border text-xs font-bold flex items-center justify-between">
+                    <span id="gto-feedback-title">✅ GTO最適プレイ！</span>
+                    <span id="gto-feedback-ev" class="mono text-[11px]">EVロス: 0.00 BB</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col flex-1 min-h-0">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2 shrink-0">
+                    <h3 class="font-bold text-xs text-slate-300">📜 アクション履歴 (BB表記)</h3>
+                    <button onclick="clearActionLog()" class="text-[10px] text-slate-500 hover:text-slate-300">クリア</button>
+                </div>
+                <div id="action-log" class="flex-1 overflow-y-auto space-y-1 text-xs pr-1 font-medium"></div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- モーダル1: ⚙️ 設定モーダル -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
+                <h2 class="text-base font-black text-white flex items-center gap-1.5"><span>⚙️</span><span>設定・オプション・データ</span></h2>
+                <button onclick="closeSettingsModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+            </div>
+
+            <div class="space-y-2.5 text-xs">
+                <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <span class="font-bold text-slate-300">🎯 特訓モード切替</span>
+                    <select id="drill-select" onchange="changeDrillMode(this.value)" class="bg-slate-800 text-slate-100 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none">
+                        <option value="normal">通常 6-Max (100BB)</option>
+                        <option value="srp_btn_bb">BTN vs BB (SRP特訓)</option>
+                        <option value="3bp_co_btn">CO vs BTN (3Betポット)</option>
+                        <option value="bvb_sb_bb">SB vs BB (ブラインド戦)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <div>
+                        <div class="font-bold text-slate-200">⚡ フォールド即次ON/OFF</div>
+                        <div class="text-[10px] text-slate-400">Fold時に残りを即決着させ約0.6秒後に次ハンドへ</div>
+                    </div>
+                    <button onclick="toggleAutoFoldNext()" id="btn-auto-fold" class="bg-emerald-600/30 text-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-500/40 transition shrink-0">ON</button>
+                </div>
+
+                <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <div>
+                        <div class="font-bold text-slate-200">⏩ 決着後自動進行ON/OFF</div>
+                        <div class="text-[10px] text-slate-400">ショーダウン決着後に自動で次のハンドを開始</div>
+                    </div>
+                    <button onclick="toggleAutoShowdownNext()" id="btn-auto-sd" class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 transition shrink-0">OFF</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="toggleCardBackColor()" id="btn-card-color" class="bg-rose-900/50 hover:bg-rose-800/60 text-rose-200 py-2 px-3 rounded-xl font-bold border border-rose-500/40 transition text-center">
+                        🎴 裏面: Bicycle赤
+                    </button>
+                    <button onclick="toggleSound()" id="btn-sound" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 px-3 rounded-xl font-bold border border-slate-700 transition text-center">
+                        🔊 効果音: ON
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+                    <button onclick="closeSettingsModal(); openReviewModal(false);" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-xl font-bold border border-slate-700 transition text-center">
+                        📝 復習・採点履歴
+                    </button>
+                    <button onclick="closeSettingsModal(); openStatsModal();" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-xl font-bold border border-slate-700 transition text-center">
+                        📈 通算戦績・スタッツ
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="resetAllStacks(); closeSettingsModal();" class="bg-slate-800 hover:bg-slate-700 text-amber-300 py-2.5 px-3 rounded-xl font-bold border border-slate-700 transition text-center">
+                        🔄 100BBリセット
+                    </button>
+                    <button onclick="downloadStandaloneHTML()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 px-3 rounded-xl font-bold shadow transition text-center">
+                        💾 HTML保存
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<!-- レンジ表画面 -->
-<div id="tableScreen" style="display:none;">
-  <div class="accordion-card open" id="gtoGuideAccordion">
-    <div class="accordion-header" onclick="toggleAccordion('gtoGuideAccordion')">
-      <span>📖 9max cash 100BB GTO戦略ガイド（タップで開閉）</span>
-      <span class="accordion-icon">▼</span>
+    <!-- モーダル2: 🧠 GTOリアルタイム解析モーダル -->
+    <div id="coach-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
+                <h2 class="text-sm font-black text-white flex items-center gap-1.5"><span>🧠</span><span>GTO リアルタイム解析</span></h2>
+                <button onclick="closeCoachModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+            </div>
+            <div id="mobile-coach-body" class="space-y-2.5 text-xs"></div>
+        </div>
     </div>
-    <div class="accordion-body">
-      <strong>【1. オープンサイジングのセオリー】</strong>
-      <ul class="guide-list">
-        <li><strong>アーリー (UTG/LJ): 2.0bb (Min-raise)</strong> ➔ 後ろに残っている人数が多いため、小さく刻んでリスクを最小化。</li>
-        <li><strong>カットオフ (CO): 2.3bb / ボタン (BTN): 2.5bb</strong> ➔ スチールの成功率を高めるため徐々にサイズアップ。</li>
-        <li><strong>スモールブラインド (SB): 3.0bb</strong> ➔ BBに対して最悪のポジション（OOP）で戦うため、大きなサイズでスチール。リンプ（緑）戦略との混合。</li>
-      </ul>
-      <strong>【2. 3-Betサイジング】</strong>
-      <ul class="guide-list">
-        <li><strong>In Position (IP): 3〜3.5倍</strong> ➔ 有利な位置から相手にプレッシャーをかける。</li>
-        <li><strong>Out of Position (SB): 5倍</strong> ➔ ポジションの不利を補うため、相手のコール基準を引き締めさせる特大サイズ。</li>
-      </ul>
-      <strong>【3. 対3-Bet（4-Bet戦略の鉄則）】</strong>
-      <ul class="guide-list">
-        <li><strong>サイズ: IPは3倍弱、OOPは2倍</strong> ➔ スタックコミットを意識した精緻なサイズ設計。</li>
-        <li><strong>構成比率: 60〜65% Fold / 23〜25% Raise / 11〜15% Call</strong>。</li>
-        <li><strong>アーリーポジション:</strong> low pocket（22〜55）およびmiddle以下のスーコネは <strong>pure call</strong>。</li>
-        <li><strong>レイトポジション (CO/BTN):</strong> low pocketやスーコネもfold頻度が増加。代わりに99+やAxs, Kxs, Axoのインディファ帯のraiseが広がり、AQs/AJs/KQsなどのコール群が形成される。</li>
-      </ul>
+
+    <!-- モーダル3: 📊 3種類の13x13 GTOプリフロップレンジ表 (右上✕固定配置) -->
+    <div id="range-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto p-3 sm:p-4 shadow-2xl flex flex-col gap-2.5">
+            <!-- ヘッダー: 左にタイトル、右上に常に閉じるボタン -->
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h2 class="text-sm sm:text-lg font-black text-white">📊 6-Max GTOレンジ表</h2>
+                        <span id="range-current-title" class="text-[11px] sm:text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-bold">BTN オープン</span>
+                    </div>
+                    <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">①オープン(RFI) / ②対オープン(3Bet/Call) / ③対3ベット(4Bet/Call)</p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button onclick="syncRangeChartToTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition">🎯 現況同期</button>
+                    <button onclick="closeRangeModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                <button id="tab-rfi" onclick="selectRangeScenario('rfi')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition bg-emerald-600 text-white">① オープン (RFI)</button>
+                <button id="tab-vs_open" onclick="selectRangeScenario('vs_open')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition bg-slate-800 text-slate-300">② 対オープン (3Bet/Call)</button>
+                <button id="tab-vs_3bet" onclick="selectRangeScenario('vs_3bet')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition bg-slate-800 text-slate-300">③ 対3ベット (4Bet/Call)</button>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/70 p-2 rounded-xl border border-slate-800">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-bold text-slate-300">自分:</span>
+                    <div id="range-hero-pos-btns" class="flex flex-wrap gap-1"></div>
+                </div>
+                <div id="range-villain-pos-wrap" class="hidden flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-bold text-rose-300">相手:</span>
+                    <div id="range-villain-pos-btns" class="flex flex-wrap gap-1"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                <div class="md:col-span-8 bg-slate-950 p-1.5 sm:p-2 rounded-xl border border-slate-800">
+                    <div id="range-matrix" class="range-grid"></div>
+                </div>
+                <div class="md:col-span-4 flex flex-col gap-2.5 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                    <div class="font-bold text-slate-200 border-b border-slate-800 pb-1.5">📌 レンジ全体比率</div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500 inline-block"></span><span id="legend-raise-label">Raise / 3Bet / 4Bet</span></span>
+                            <span id="summary-raise-pct" class="font-bold text-rose-400 mono">22.5%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span><span>Call</span></span>
+                            <span id="summary-call-pct" class="font-bold text-emerald-400 mono">0.0%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-800 border border-slate-600 inline-block"></span><span>Fold</span></span>
+                            <span id="summary-fold-pct" class="font-bold text-slate-400 mono">77.5%</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 pt-1 text-[11px] text-amber-300">
+                            <span class="w-3 h-3 rounded border-2 border-yellow-400 inline-block"></span>
+                            <span>黄色枠 ＝ あなたの現在の手札</span>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-800 pt-2.5 mt-1">
+                        <div class="text-slate-400 text-[11px] mb-1">🔍 セル詳細</div>
+                        <div id="cell-detail-hand" class="text-base font-black text-amber-400 mono mb-1">AKs</div>
+                        <div id="cell-detail-bars" class="space-y-1 text-[11px]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-
-<script>
-function toggleAccordion(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle('open');
-}
-
-const POSITIONS = ['UTG', 'LJ', 'CO', 'BTN', 'SB', 'BB'];
-const GRID_RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-const RANK_VAL = {};
-for(let i=0; i<GRID_RANKS.length; i++) RANK_VAL[GRID_RANKS[i]] = 12 - i;
-
-const ALL_HANDS_MATRIX = [];
-for (let r = 0; r < 13; r++) {
-  const row = [];
-  for (let c = 0; c < 13; c++) {
-    if (r === c) row.push(GRID_RANKS[r] + GRID_RANKS[c]);
-    else if (r < c) row.push(GRID_RANKS[r] + GRID_RANKS[c] + 's');
-    else row.push(GRID_RANKS[c] + GRID_RANKS[r] + 'o');
-  }
-  ALL_HANDS_MATRIX.push(row);
-}
-
-// ==========================================
-// 推奨サイジング データベース
-// ==========================================
-const SIZING_DATA = {
-  rfi: {
-    UTG: '2.0bb (Min)', LJ: '2.0bb (Min)', CO: '2.3bb', BTN: '2.5bb', SB: '3.0bb (Limp混合)'
-  },
-  facing: {
-    UTG: '3.0〜3.5x', LJ: '3.0〜3.5x', CO: '3.0〜3.5x', BTN: '3.5x',
-    SB: '5.0x (OOP特大)',
-    BB_UTG: '6.0x (vs 2bb)', BB_LJ: '6.0x (vs 2bb)', BB_CO: '6.0x (vs 2.3bb)', BB_BTN: '5.0x (vs 2.5bb)', BB_SB: '3.0x (vs 3bb)'
-  },
-  facing3bet: {
-    IP: '約3.0x弱 (IP 4-Bet)', OOP: '約2.0x (OOP 4-Bet)'
-  }
-};
-
-// ==========================================
-// GTO ソルバー判定エンジン（画像1〜7完全準拠）
-// 返り値: 'R' (Raise), 'C' (Call), 'F' (Fold), 'RF' (Raise/Fold), 'RC' (Raise/Call), 'CF' (Call/Fold)
-// ==========================================
-function evaluateGtoAction(mode, villain, hero, hand) {
-  const isPair = hand.length === 2;
-  const isSuited = hand.endsWith('s');
-  const r1 = hand[0], r2 = hand[1];
-  const v1 = RANK_VAL[r1], v2 = RANK_VAL[r2];
-  const diff = Math.abs(v1 - v2);
-
-  // 1. OPEN (RFI) [画像2]
-  if (mode === 'rfi') {
-    if (hero === 'UTG') {
-      if (['AA','KK','QQ','JJ','TT','99','88','77'].includes(hand)) return 'R';
-      if (['66','55'].includes(hand)) return 'RF';
-      if (['AKs','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','A5s','A4s'].includes(hand)) return 'R';
-      if (['A3s','A2s','76s','65s','Q9s','J9s'].includes(hand)) return 'RF';
-      if (['AKo','AQo'].includes(hand)) return 'R';
-      if (['AJo'].includes(hand)) return 'RF';
-      return 'F';
-    }
-    if (hero === 'LJ') {
-      if (['AA','KK','QQ','JJ','TT','99','88','77','66','55'].includes(hand)) return 'R';
-      if (['44','33','22'].includes(hand)) return 'RF';
-      if (r1 === 'A' && isSuited) return 'R';
-      if (['KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s','65s'].includes(hand)) return 'R';
-      if (['K8s','K7s','Q8s','J8s','T8s','86s','54s'].includes(hand)) return 'RF';
-      if (['AKo','AQo','AJo','KQo'].includes(hand)) return 'R';
-      if (['ATo','KJo'].includes(hand)) return 'RF';
-      return 'F';
-    }
-    if (hero === 'CO') {
-      if (isPair) return 'R';
-      if (r1 === 'A' && isSuited) return 'R';
-      if (isSuited && (v1 >= 11 || (v1 >= 9 && v2 >= 4) || (v1 >= 7 && v2 >= 3) || diff <= 2)) return 'R';
-      if (['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo','JTo'].includes(hand)) return 'R';
-      if (['A8o','K9o','Q9o','J9o','T9o'].includes(hand)) return 'RF';
-      return 'F';
-    }
-    if (hero === 'BTN') {
-      if (isPair) return 'R';
-      if (isSuited && (v1 >= 10 || (v1 >= 8 && v2 >= 2) || diff <= 3)) return 'R';
-      if (['AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','K7o','QJo','QTo','Q9o','Q8o','JTo','J9o','J8o','T9o','T8o','98o','97o','87o'].includes(hand)) return 'R';
-      return 'F';
-    }
-    if (hero === 'SB') {
-      // SBは赤（レイズ）と緑（リンプ）の混合
-      if (['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','AKo','AQo'].includes(hand)) return 'R';
-      if (['88','77','66','55','44','33','22'].includes(hand)) return 'RC';
-      if (r1 === 'A' && isSuited) return 'RC';
-      if (isSuited && diff <= 2) return 'C';
-      if (['AJo','ATo','KQo','KJo'].includes(hand)) return 'RC';
-      if (['A9o','A8o','A7o','KTo','QTo','JTo'].includes(hand)) return 'C';
-      if (isSuited && (v1 >= 9 || v2 >= 6)) return 'C';
-      return 'F';
-    }
-    return 'F';
-  }
-
-  // 2. FACING OPEN (3-Bet / Call) [画像1, 3, 7]
-  if (mode === 'facing') {
-    // BB Defense [画像7]
-    if (hero === 'BB') {
-      if (villain === 'BTN' || villain === 'SB') {
-        if (['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','AKo','AQo'].includes(hand)) return 'R';
-        if (['A5s','A4s','A3s','A2s','KQs','KJs'].includes(hand)) return 'R';
-        if (isPair) return 'C';
-        if (isSuited) return 'C';
-        if (['AJo','ATo','A9o','A8o','A7o','KQo','KJo','KTo','QJo','QTo','JTo','T9o','98o'].includes(hand)) return 'C';
-        return 'F';
-      }
-      // vs UTG / LJ / CO
-      if (['AA','KK','QQ','AKs','AKo'].includes(hand)) return 'R';
-      if (['JJ','AQs','A5s','A4s'].includes(hand)) return 'RC';
-      if (isPair) return 'C';
-      if (isSuited && (v1 >= 9 || diff <= 2 || ['A9s','A8s','A7s','A6s','KTs','QTs','JTs'].includes(hand))) return 'C';
-      if (['AQo','AJo','ATo','KQo','KJo','QJo'].includes(hand)) return 'C';
-      return 'F';
-    }
-
-    // SB vs BTN/CO/LJ/UTG (5x 特大3-Bet / Fold中心) [画像1, 3]
-    if (hero === 'SB') {
-      if (['AA','KK','QQ','JJ','AKs','AKo','AQs'].includes(hand)) return 'R';
-      if (['TT','99','AJs','ATs','A5s','A4s','KQs'].includes(hand)) return 'R';
-      if (villain === 'BTN' && ['88','77','A9s-A2s','KJs','KTs','QJs','QTs','JTs','T9s','AQo','KQo'].includes(hand)) return 'R';
-      return 'F';
-    }
-
-    // BTN vs CO/LJ/UTG [画像1, 3]
-    if (hero === 'BTN') {
-      if (['AA','KK','QQ','AKs','AKo'].includes(hand)) return 'R';
-      if (['JJ','TT','AQs','A5s','A4s'].includes(hand)) return 'RC';
-      if (isPair) return 'C'; // 全ポケットコール傾向
-      if (['AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','76s','65s'].includes(hand)) return 'C';
-      if (villain === 'CO' && ['AQo','KQo','Q9s','J9s','54s'].includes(hand)) return 'C';
-      return 'F';
-    }
-
-    // LJ/CO vs UTG [画像1]
-    if (['AA','KK','QQ','AKs','AKo'].includes(hand)) return 'R';
-    if (['JJ','TT','99','AQs','AJs','KQs','QJs','JTs','T9s'].includes(hand)) return 'C';
-    if (['A5s','A4s'].includes(hand)) return 'RF';
-    if (isPair && ['88','77','66'].includes(hand)) return 'CF';
-    return 'F';
-  }
-
-  // 3. FACING 3-BET (4-Bet) [画像4, 5, 6]
-  if (mode === 'facing3bet') {
-    // Pure 4-bet / All-in
-    if (['AA','KK','AKs'].includes(hand)) return 'R';
-    if (['QQ','AKo'].includes(hand)) return 'RC';
-    if (['A5s','A4s'].includes(hand)) return 'RF'; // ブラフ4-Bet枠
-
-    // UTG / LJ: low pocket & middleスーコネは pure call [画像4]
-    if (hero === 'UTG' || hero === 'LJ') {
-      if (['JJ','TT','99','88','77','66','55','44','33','22'].includes(hand)) return 'C';
-      if (['AQs','AJs','KQs','QJs','JTs','T9s','98s','87s'].includes(hand)) return 'C';
-      return 'F';
-    }
-
-    // CO / BTN: MP〜LPでは low pocketとスーコネのfold増、インディファ帯のraise [画像5, 6]
-    if (hero === 'CO' || hero === 'BTN') {
-      if (['JJ','TT','99'].includes(hand)) return 'RC';
-      if (['88','77'].includes(hand)) return 'CF';
-      if (['66','55','44','33','22'].includes(hand)) return 'F';
-      if (['AQs','AJs','KQs','QJs','JTs'].includes(hand)) return 'C';
-      if (['T9s','98s'].includes(hand)) return 'CF';
-      if (['A3s','A2s','K9s','Q9s'].includes(hand)) return 'RF';
-      return 'F';
-    }
-  }
-
-  return 'F';
-}
-
-function getGtoInsight(hand, mode, villain, hero, action) {
-  let note = '';
-
-  if (mode === 'rfi') {
-    if (hero === 'SB') {
-      return `【SB戦略】BBに対してOOPとなるため、強いプレミアは3.0bbにレイズしつつ、中位ポケットやスーコネ、オフスーツAはリンプ（緑）を多用してフロップを安く見に行く混合戦略がGTOの基本です。`;
-    }
-    return `【${hero}オープン】推奨サイズは【${SIZING_DATA.rfi[hero]}】です。後ろのプレイヤー数に応じた適正レンジで主導権を握ります。`;
-  }
-
-  if (mode === 'facing') {
-    if (hero === 'SB') {
-      return `【画像メモ：SBはBTNと類似。OOPのためスーコネでのcallやA middle〜low sでのraise率を減らす】<br>ポジション不利を補うため、推奨【5.0倍】の特大3-betを打つか、潔くフォールドする二極化戦略をとります。`;
-    }
-    if (hero === 'BB') {
-      return `【画像メモ：BB defense 100BB】<br>オッズが極めて良好なため、全ポケットペアやスーコネ、ブロードウェイを広くディフェンス（コール）します。`;
-    }
-    if (action.includes('R')) {
-      return `【3-Bet】推奨サイズは【${SIZING_DATA.facing.IP}】。プレミアでのバリューに加え、A5s/A4s等のブロッカー＋発展性ハンドをブラフに混ぜて相手を牽制します。`;
-    }
-    return `【Call】インポジション（IP）の有利さを活かし、相手の強い手だけを残さないようフロップへ進みます。`;
-  }
-
-  if (mode === 'facing3bet') {
-    const isLowPair = ['22','33','44','55'].includes(hand);
-    const isSuitedConn = ['T9s','98s','87s','76s','65s'].includes(hand);
-
-    if (hero === 'UTG' || hero === 'LJ') {
-      if (isLowPair || isSuitedConn) {
-        return `<span class="gto-note-tag">画像4メモ</span><br><strong>「low pocketとmiddle以下のスーコネはpure call」</strong><br>アーリーオープンでは相手の3-betレンジに対してインプライドオッズが高く、セットマインやビッグドロー狙いでコールが肯定されます。`;
-      }
-      return `<span class="gto-note-tag">画像4メモ</span><br><strong>「60%以上fold, 25%raise, 15%call」</strong><br>4-betサイズはIP 3x弱、OOP 2x。AA/KK/AKsのバリューとA5s/A4sのブラフにポラライズします。`;
-    } else {
-      if (isLowPair || isSuitedConn) {
-        return `<span class="gto-note-tag">画像5・6メモ</span><br><strong>「MP〜LPではlow pocketとmiddleスーコネもfold頻度が増える」</strong><br>レンジが横に広がるため、セットマインのオッズが見合わなくなりフォールドへ回ります。`;
-      }
-      return `<span class="gto-note-tag">画像5・6メモ</span><br><strong>「99+やAxs Kxs Axoのインディファ帯のraiseが広がり、AQs, AJs, KQsなどの間のcall群が作られる」</strong><br>OOP相手の場合はraiseが減ってcallが増えます。`;
-    }
-  }
-
-  return 'GTOソルバー基準に基づき、最適なEVを追求した判断です。';
-}
-
-let currentMode = 'rfi';
-let heroPos = 'CO';
-let villainPos = 'BTN';
-let selectedHand = 'AKs';
-
-function initUI() {
-  renderPosButtons();
-  initCheckerMatrix();
-  setupPinchZoom('checkerWrapper', 'checkerInner', 'checker');
-  updateChecker();
-}
-
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('tabRfi').classList.toggle('active', mode === 'rfi');
-  document.getElementById('tabFacing').classList.toggle('active', mode === 'facing');
-  document.getElementById('tab4bet').classList.toggle('active', mode === 'facing3bet');
-  document.getElementById('tabQuiz').classList.toggle('active', mode === 'quiz');
-  document.getElementById('tabTable').classList.toggle('active', mode === 'table');
-
-  const isChecker = ['rfi', 'facing', 'facing3bet'].includes(mode);
-  document.getElementById('checkerScreen').style.display = isChecker ? 'block' : 'none';
-  document.getElementById('quizScreen').style.display = mode === 'quiz' ? 'block' : 'none';
-  document.getElementById('tableScreen').style.display = mode === 'table' ? 'block' : 'none';
-
-  if (isChecker) {
-    const hasVillain = mode !== 'rfi';
-    document.getElementById('villainSection').style.display = hasVillain ? 'block' : 'none';
-    
-    if (mode === 'facing3bet') {
-      document.getElementById('heroLabel').innerText = '1. オープンしたあなた (Hero)';
-      document.getElementById('villainLabel').innerText = '2. 3-Betしてきた相手 (Villain)';
-      document.getElementById('lgRaiseText').innerText = '4-BET';
-      if (heroPos === 'BB') heroPos = 'CO';
-      if (villainPos === heroPos || POSITIONS.indexOf(villainPos) <= POSITIONS.indexOf(heroPos)) villainPos = 'BTN';
-    } else if (mode === 'facing') {
-      document.getElementById('villainLabel').innerText = '1. オープンした相手 (Villain)';
-      document.getElementById('heroLabel').innerText = '2. あなたのポジション (Hero)';
-      document.getElementById('lgRaiseText').innerText = '3-BET';
-      if (heroPos === 'UTG') heroPos = 'BTN';
-      if (villainPos === heroPos || POSITIONS.indexOf(villainPos) >= POSITIONS.indexOf(heroPos)) villainPos = 'CO';
-    } else {
-      document.getElementById('heroLabel').innerText = 'あなたのポジション (Hero)';
-      document.getElementById('lgRaiseText').innerText = 'RAISE';
-    }
-
-    renderPosButtons();
-    updateChecker();
-  } else if (mode === 'quiz') {
-    if (!quizState.current) nextQuizQuestion();
-  }
-}
-
-function renderPosButtons() {
-  const heroGrid = document.getElementById('heroGrid');
-  heroGrid.innerHTML = '';
-  POSITIONS.forEach(pos => {
-    const btn = document.createElement('button');
-    btn.className = `pos-btn ${pos === heroPos ? 'active' : ''}`;
-    btn.innerText = pos;
-    if (currentMode === 'facing' && pos === 'UTG') btn.disabled = true;
-    if (currentMode === 'facing3bet' && (pos === 'SB' || pos === 'BB')) btn.disabled = true;
-    btn.onclick = () => {
-      heroPos = pos;
-      if (currentMode === 'facing' && POSITIONS.indexOf(villainPos) >= POSITIONS.indexOf(heroPos)) {
-        villainPos = POSITIONS[POSITIONS.indexOf(heroPos) - 1];
-      }
-      if (currentMode === 'facing3bet' && POSITIONS.indexOf(villainPos) <= POSITIONS.indexOf(heroPos)) {
-        villainPos = POSITIONS[POSITIONS.indexOf(heroPos) + 1] || 'BTN';
-      }
-      renderPosButtons();
-      updateChecker();
-    };
-    heroGrid.appendChild(btn);
-  });
-
-  if (currentMode !== 'rfi') {
-    const villainGrid = document.getElementById('villainGrid');
-    villainGrid.innerHTML = '';
-    const hIdx = POSITIONS.indexOf(heroPos);
-    POSITIONS.forEach(pos => {
-      const btn = document.createElement('button');
-      btn.className = `pos-btn ${pos === villainPos ? 'active' : ''}`;
-      btn.innerText = pos;
-      if (currentMode === 'facing' && POSITIONS.indexOf(pos) >= hIdx) btn.disabled = true;
-      if (currentMode === 'facing3bet' && POSITIONS.indexOf(pos) <= hIdx) btn.disabled = true;
-      btn.onclick = () => {
-        villainPos = pos;
-        renderPosButtons();
-        updateChecker();
-      };
-      villainGrid.appendChild(btn);
-    });
-  }
-}
-
-function initCheckerMatrix() {
-  const container = document.getElementById('checkerMatrix');
-  container.innerHTML = '';
-  for (let r = 0; r < 13; r++) {
-    for (let c = 0; c < 13; c++) {
-      const hand = ALL_HANDS_MATRIX[r][c];
-      const div = document.createElement('div');
-      div.className = 'matrix-cell';
-      div.id = `chk_${hand}`;
-      div.innerText = hand;
-      div.onclick = () => {
-        if (zoomState.checker.isDragging) return;
-        selectedHand = hand;
-        updateChecker();
-      };
-      container.appendChild(div);
-    }
-  }
-}
-
-function updateChecker() {
-  const sit = document.getElementById('sitLabel');
-  const badge = document.getElementById('actionBadge');
-  const desc = document.getElementById('actionDesc');
-  const logicBox = document.getElementById('logicBox');
-  const logicText = document.getElementById('logicText');
-  const treeNavBox = document.getElementById('treeNavBox');
-  const treeNavBtn = document.getElementById('treeNavBtn');
-
-  // サイジングバッジ更新
-  const heroBadge = document.getElementById('heroSizeBadge');
-  const villainBadge = document.getElementById('villainSizeBadge');
-
-  if (currentMode === 'rfi') {
-    heroBadge.innerText = SIZING_DATA.rfi[heroPos] || '';
-    sit.innerText = `全員フォールド ➔ あなた (${heroPos}) | 選択: ${selectedHand}`;
-    treeNavBox.style.display = (heroPos !== 'SB' && heroPos !== 'BB') ? 'flex' : 'none';
-    treeNavBtn.innerText = `BTNから3-Betされたら？ (Facing 3-Bet) ➔`;
-  } else if (currentMode === 'facing') {
-    villainBadge.innerText = SIZING_DATA.rfi[villainPos] || '';
-    heroBadge.innerText = heroPos === 'SB' ? SIZING_DATA.facing.SB : (heroPos === 'BB' ? (SIZING_DATA.facing[`BB_${villainPos}`] || '防衛オッズ') : SIZING_DATA.facing.IP);
-    sit.innerText = `${villainPos} オープン vs あなた (${heroPos}) | 選択: ${selectedHand}`;
-    treeNavBox.style.display = 'none';
-  } else {
-    heroBadge.innerText = SIZING_DATA.rfi[heroPos] || '';
-    const isIp = POSITIONS.indexOf(heroPos) > POSITIONS.indexOf(villainPos);
-    villainBadge.innerText = SIZING_DATA.facing3bet[isIp ? 'IP' : 'OOP'];
-    sit.innerText = `あなた (${heroPos}) オープン ➔ ${villainPos} が3-Bet！ | 選択: ${selectedHand}`;
-    treeNavBox.style.display = 'none';
-  }
-
-  const act = evaluateGtoAction(currentMode, villainPos, heroPos, selectedHand);
-  
-  if (act === 'R') {
-    badge.className = 'badge raise';
-    badge.innerText = currentMode === 'facing3bet' ? '4-BET' : (currentMode === 'facing' ? '3-BET' : 'RAISE');
-    desc.innerText = `高頻度・ピュアでレイズを選択します。`;
-  } else if (act === 'C') {
-    badge.className = 'badge call';
-    badge.innerText = 'CALL';
-    desc.innerText = `コールを選択し、フロップへ進みます。`;
-  } else if (act === 'RF') {
-    badge.className = 'badge mixed';
-    badge.innerText = 'RAISE / FOLD';
-    desc.innerText = `混合頻度（ブラフやマージナル参加の境界線ハンド）。`;
-  } else if (act === 'RC') {
-    badge.className = 'badge mixed';
-    badge.innerText = 'RAISE / CALL';
-    desc.innerText = `バリューレイズとコールを半々で使い分ける境界線。`;
-  } else if (act === 'CF') {
-    badge.className = 'badge mixed';
-    badge.innerText = 'CALL / FOLD';
-    desc.innerText = `オッズとテーブル状況に応じたマージナルコール枠。`;
-  } else {
-    badge.className = 'badge fold';
-    badge.innerText = 'FOLD';
-    desc.innerText = `EVが見合わないためフォールドが正解です。`;
-  }
-
-  logicText.innerHTML = getGtoInsight(selectedHand, currentMode, villainPos, heroPos, act);
-  logicBox.style.display = 'block';
-
-  // マトリックス全セル描画
-  for (let r = 0; r < 13; r++) {
-    for (let c = 0; c < 13; c++) {
-      const h = ALL_HANDS_MATRIX[r][c];
-      const cellAct = evaluateGtoAction(currentMode, villainPos, heroPos, h);
-      let cls = 'act-fold';
-      if (cellAct === 'R') cls = 'act-raise';
-      else if (cellAct === 'C') cls = 'act-call';
-      else if (cellAct === 'RF') cls = 'act-rf';
-      else if (cellAct === 'RC') cls = 'act-rc';
-      else if (cellAct === 'CF') cls = 'act-cf';
-
-      document.getElementById(`chk_${h}`).className = `matrix-cell ${cls} ${h === selectedHand ? 'selected' : ''}`;
-    }
-  }
-}
-
-function navigateTree() {
-  if (currentMode === 'rfi') {
-    villainPos = 'BTN';
-    setMode('facing3bet');
-  }
-}
-
-// ==========================================
-// ピンチズーム＆パン機能
-// ==========================================
-const zoomState = {
-  checker: { scale: 1.0, x: 0, y: 0, isDragging: false }
-};
-
-function clampTranslation(st, wrapper) {
-  if (st.scale <= 1.0) {
-    st.scale = 1.0; st.x = 0; st.y = 0; return;
-  }
-  const maxMoveX = wrapper.clientWidth * (st.scale - 1);
-  const maxMoveY = wrapper.clientHeight * (st.scale - 1);
-  st.x = Math.min(0, Math.max(-maxMoveX, st.x));
-  st.y = Math.min(0, Math.max(-maxMoveY, st.y));
-}
-
-function applyZoomTransform(targetKey) {
-  const innerId = targetKey === 'checker' ? 'checkerInner' : 'tableInner';
-  const st = zoomState[targetKey];
-  const el = document.getElementById(innerId);
-  if (el) el.style.transform = `translate(${st.x}px, ${st.y}px) scale(${st.scale})`;
-}
-
-function zoomMatrix(targetKey, delta) {
-  const wrapper = document.getElementById('checkerWrapper');
-  const st = zoomState[targetKey];
-  const oldScale = st.scale;
-  const newScale = Math.min(Math.max(oldScale + delta, 1.0), 2.5);
-  if (newScale === oldScale) return;
-
-  const midX = wrapper.clientWidth / 2;
-  const midY = wrapper.clientHeight / 2;
-  st.x = midX - (midX - st.x) * (newScale / oldScale);
-  st.y = midY - (midY - st.y) * (newScale / oldScale);
-  st.scale = newScale;
-
-  clampTranslation(st, wrapper);
-  applyZoomTransform(targetKey);
-}
-
-function resetMatrixZoom(targetKey) {
-  const st = zoomState[targetKey];
-  st.scale = 1.0; st.x = 0; st.y = 0;
-  applyZoomTransform(targetKey);
-}
-
-function setupPinchZoom(wrapperId, innerId, targetKey) {
-  const wrapper = document.getElementById(wrapperId);
-  const st = zoomState[targetKey];
-
-  let startDist = 0, startScale = 1, startTouchX = 0, startTouchY = 0, startX = 0, startY = 0, lastTapTime = 0;
-
-  wrapper.addEventListener('touchstart', (e) => {
-    const rect = wrapper.getBoundingClientRect();
-    if (e.touches.length === 2) {
-      startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      startScale = st.scale;
-      startTouchX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
-      startTouchY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
-      startX = st.x; startY = st.y;
-    } else if (e.touches.length === 1) {
-      startTouchX = e.touches[0].clientX - rect.left;
-      startTouchY = e.touches[0].clientY - rect.top;
-      startX = st.x; startY = st.y;
-      st.isDragging = false;
-      const now = Date.now();
-      if (now - lastTapTime < 300) resetMatrixZoom(targetKey);
-      lastTapTime = now;
-    }
-  }, { passive: false });
-
-  wrapper.addEventListener('touchmove', (e) => {
-    const rect = wrapper.getBoundingClientRect();
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      if (startDist > 0) {
-        const factor = dist / startDist;
-        const newScale = Math.min(Math.max(startScale * factor, 1.0), 2.5);
-        const currentMidX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
-        const currentMidY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
-        st.x = currentMidX - ((startTouchX - startX) / startScale) * newScale;
-        st.y = currentMidY - ((startTouchY - startY) / startScale) * newScale;
-        st.scale = newScale;
-        clampTranslation(st, wrapper);
-        applyZoomTransform(targetKey);
-      }
-    } else if (e.touches.length === 1 && st.scale > 1.0) {
-      e.preventDefault();
-      const dx = (e.touches[0].clientX - rect.left) - startTouchX;
-      const dy = (e.touches[0].clientY - rect.top) - startTouchY;
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) st.isDragging = true;
-      st.x = startX + dx; st.y = startY + dy;
-      clampTranslation(st, wrapper);
-      applyZoomTransform(targetKey);
-    }
-  }, { passive: false });
-
-  wrapper.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) startDist = 0;
-    setTimeout(() => { st.isDragging = false; }, 50);
-  });
-}
-
-// ==========================================
-// クイズ機能
-// ==========================================
-const QUIZ_HANDS = [
-  'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22',
-  'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A5s', 'A4s', 'A3s', 'A2s',
-  'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'KQo', 'KJo', 'KTo',
-  'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', '54s'
-];
-
-let quizFilter = 'all';
-let quizState = { streak: 0, correct: 0, total: 0, current: null };
-
-function setQuizFilter(f) {
-  quizFilter = f;
-  ['All','Rfi','Facing','Bb','4bet','Mix'].forEach(k => {
-    const el = document.getElementById(`fBtn${k}`);
-    if (el) el.classList.toggle('active', f.toLowerCase() === k.toLowerCase());
-  });
-  nextQuizQuestion();
-}
-
-function nextQuizQuestion() {
-  document.getElementById('feedbackBox').style.display = 'none';
-  document.getElementById('quizBtns').style.display = 'grid';
-
-  const hand = QUIZ_HANDS[Math.floor(Math.random() * QUIZ_HANDS.length)];
-  let mode = 'rfi', hPos = 'CO', vPos = 'BTN';
-
-  if (quizFilter === 'rfi') {
-    mode = 'rfi';
-    hPos = ['UTG','LJ','CO','BTN','SB'][Math.floor(Math.random() * 5)];
-  } else if (quizFilter === 'bb') {
-    mode = 'facing';
-    hPos = 'BB';
-    vPos = ['UTG','LJ','CO','BTN','SB'][Math.floor(Math.random() * 5)];
-  } else if (quizFilter === 'facing') {
-    mode = 'facing';
-    hPos = ['BTN','SB'][Math.floor(Math.random() * 2)];
-    vPos = ['UTG','CO'][Math.floor(Math.random() * 2)];
-  } else if (quizFilter === 'facing3bet') {
-    mode = 'facing3bet';
-    hPos = ['UTG','CO','BTN'][Math.floor(Math.random() * 3)];
-    vPos = hPos === 'UTG' ? 'LJ' : (hPos === 'CO' ? 'BTN' : 'SB');
-  } else {
-    // all or mix
-    const r = Math.random();
-    if (r < 0.3) {
-      mode = 'rfi'; hPos = ['UTG','CO','BTN','SB'][Math.floor(Math.random() * 4)];
-    } else if (r < 0.65) {
-      mode = 'facing'; hPos = ['BTN','SB','BB'][Math.floor(Math.random() * 3)]; vPos = 'CO';
-    } else {
-      mode = 'facing3bet'; hPos = 'CO'; vPos = 'BTN';
-    }
-  }
-
-  const correctGto = evaluateGtoAction(mode, vPos, hPos, hand);
-  let correctCategory = 'FOLD';
-  if (correctGto === 'R') correctCategory = 'RAISE';
-  else if (correctGto === 'C') correctCategory = 'CALL';
-  else if (['RF','RC','CF'].includes(correctGto)) correctCategory = 'MIX';
-
-  quizState.current = { mode, hero: hPos, villain: vPos, hand, correct: correctCategory, rawAct: correctGto };
-
-  let sitText = '';
-  if (mode === 'rfi') sitText = `【${hPos}】 全員フォールド ➔ あなたの手番`;
-  else if (mode === 'facing') sitText = `【${vPos}】オープン vs あなた【${hPos}】`;
-  else sitText = `あなた【${hPos}】オープン ➔ 【${vPos}】が3-Bet！`;
-
-  document.getElementById('quizSit').innerText = sitText;
-  document.getElementById('quizHand').innerText = hand;
-}
-
-function handleQuizAnswer(ans) {
-  const q = quizState.current;
-  if (!q) return;
-
-  quizState.total++;
-  // 混合ハンドの場合、MIX回答はもちろん、Raise/Callいずれを選んでも部分正解として許容
-  let isCorrect = (ans === q.correct);
-  if (!isCorrect && q.correct === 'MIX') {
-    if (q.rawAct === 'RF' && (ans === 'RAISE' || ans === 'FOLD')) isCorrect = true;
-    if (q.rawAct === 'RC' && (ans === 'RAISE' || ans === 'CALL')) isCorrect = true;
-    if (q.rawAct === 'CF' && (ans === 'CALL' || ans === 'FOLD')) isCorrect = true;
-  }
-
-  if (isCorrect) {
-    quizState.correct++;
-    quizState.streak++;
-  } else {
-    quizState.streak = 0;
-  }
-
-  const pct = Math.round((quizState.correct / quizState.total) * 100);
-  document.getElementById('quizStreak').innerText = `連続正解: ${quizState.streak}`;
-  document.getElementById('quizScore').innerText = `スコア: ${quizState.correct} / ${quizState.total} (${pct}%)`;
-
-  const fbBox = document.getElementById('feedbackBox');
-  const fbStatus = document.getElementById('feedbackStatus');
-  const fbDesc = document.getElementById('feedbackDesc');
-  const fbLogic = document.getElementById('feedbackLogic');
-  const fbHandBadge = document.getElementById('feedbackHandBadge');
-
-  document.getElementById('quizBtns').style.display = 'none';
-  fbBox.className = `feedback-box ${isCorrect ? 'correct' : 'wrong'}`;
-  fbStatus.innerText = isCorrect ? '正解！ 🎯' : '不正解... ❌';
-
-  let badgeCls = 'act-fold';
-  if (q.rawAct === 'R') badgeCls = 'act-raise';
-  else if (q.rawAct === 'C') badgeCls = 'act-call';
-  else if (q.rawAct === 'RF') badgeCls = 'act-rf';
-  else if (q.rawAct === 'RC') badgeCls = 'act-rc';
-  else if (q.rawAct === 'CF') badgeCls = 'act-cf';
-
-  fbHandBadge.className = `feedback-hand-badge ${badgeCls}`;
-  fbHandBadge.innerText = q.hand;
-
-  fbDesc.innerText = `GTO正解: 【 ${q.correct === 'MIX' ? `${q.rawAct} (混合戦略)` : q.correct} 】`;
-  fbLogic.innerHTML = getGtoInsight(q.hand, q.mode, q.villain, q.hero, q.rawAct);
-
-  fbBox.style.display = 'block';
-}
-
-window.onload = initUI;
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.log('SW registration failed:', err);
-    });
-  });
-}
-</script>
+
+    <!-- モーダル4: 📝 ミス復習・採点履歴モーダル (ミスのみフィルター付き) -->
+    <div id="review-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[86vh] flex flex-col p-4 shadow-2xl">
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5 mb-2.5">
+                <div>
+                    <h2 class="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                        <span>📝 GTOプレイ復習＆採点履歴</span>
+                    </h2>
+                    <div class="flex items-center gap-1.5 mt-1.5">
+                        <button id="filter-all-btn" onclick="setReviewFilter(false)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300">すべて表示</button>
+                        <button id="filter-mistake-btn" onclick="setReviewFilter(true)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white">🚨 ミスのみ表示</button>
+                    </div>
+                </div>
+                <button onclick="closeReviewModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+            </div>
+            <div id="review-list" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs"></div>
+        </div>
+    </div>
+
+    <!-- モーダル5: 📈 通算戦績モーダル -->
+    <div id="stats-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
+                <h2 class="text-base font-black text-white">📈 通算GTO戦績＆スタッツ</h2>
+                <button onclick="closeStatsModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">総ハンド数</div><div id="stat-hands" class="text-base font-black text-white mono mt-0.5">0</div></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">通算収支</div><div id="stat-profit" class="text-base font-black text-emerald-400 mono mt-0.5">+0.0 BB</div></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">GTO一致率</div><div id="stat-gto-acc" class="text-base font-black text-amber-400 mono mt-0.5">100%</div></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">VPIP (参加率)</div><div id="stat-vpip" class="text-base font-black text-sky-400 mono mt-0.5">0.0%</div></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">PFR (レイズ率)</div><div id="stat-pfr" class="text-base font-black text-indigo-400 mono mt-0.5">0.0%</div></div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">平均EVロス</div><div id="stat-evloss" class="text-base font-black text-rose-400 mono mt-0.5">0.00 BB</div></div>
+            </div>
+            <div class="flex justify-between pt-1">
+                <button onclick="resetAllStats()" class="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-700/60 px-3 py-1.5 rounded-lg text-xs font-bold">戦績リセット</button>
+                <button onclick="closeStatsModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 1. 定数・ユーティリティ・Web Audio API (チップ音/配布音/警告音)
+        // =========================================================================
+        const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        const RANK_VAL = { 'A':14, 'K':13, 'Q':12, 'J':11, 'T':10, '9':9, '8':8, '7':7, '6':6, '5':5, '4':4, '3':3, '2':2 };
+        const VAL_RANK = { 14:'A', 13:'K', 12:'Q', 11:'J', 10:'T', 9:'9', 8:'8', 7:'7', 6:'6', 5:'5', 4:'4', 3:'3', 2:'2' };
+        const SUITS = ['s', 'h', 'd', 'c'];
+        const SUIT_SYM = { 's':'♠', 'h':'♥', 'd':'♦', 'c':'♣' };
+        const SUIT_COLOR = { 's':'text-slate-900', 'h':'text-rose-600', 'd':'text-blue-600', 'c':'text-emerald-700' };
+
+        let cardBackColor = 'red';
+        let soundEnabled = true;
+        let audioCtx = null;
+        let reviewMistakeOnly = false;
+        let lastBannerSpot = null;
+
+        function roundBB(v) { return Math.round(v * 10) / 10; }
+        function fmtBB(v) {
+            const b = roundBB(v);
+            return (b % 1 === 0 ? b.toFixed(0) : b.toFixed(1)) + 'BB';
+        }
+
+        function toggleCardBackColor() {
+            cardBackColor = cardBackColor === 'red' ? 'blue' : 'red';
+            const btn = document.getElementById('btn-card-color');
+            if (cardBackColor === 'red') {
+                btn.textContent = '🎴 裏面: Bicycle赤';
+                btn.className = 'bg-rose-900/50 hover:bg-rose-800/60 text-rose-200 py-2 px-3 rounded-xl font-bold border border-rose-500/40 transition text-center';
+            } else {
+                btn.textContent = '🎴 裏面: Bicycle青';
+                btn.className = 'bg-blue-900/50 hover:bg-blue-800/60 text-blue-200 py-2 px-3 rounded-xl font-bold border border-blue-500/40 transition text-center';
+            }
+            renderAll();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                if (type === 'deal') {
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(240, now + 0.05);
+                    gain.gain.setValueAtTime(0.07, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'chip') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1450, now);
+                    osc.frequency.exponentialRampToValueAtTime(1980, now + 0.06);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.06);
+                    osc.start(now); osc.stop(now + 0.06);
+                } else if (type === 'fold') {
+                    osc.frequency.setValueAtTime(240, now);
+                    osc.frequency.linearRampToValueAtTime(125, now + 0.07);
+                    gain.gain.setValueAtTime(0.06, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.07);
+                    osc.start(now); osc.stop(now + 0.07);
+                } else if (type === 'warn') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(175, now + 0.09);
+                    gain.gain.setValueAtTime(0.12, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+                    osc.start(now); osc.stop(now + 0.22);
+                } else if (type === 'win') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523, now);
+                    osc.frequency.setValueAtTime(659, now + 0.08);
+                    osc.frequency.setValueAtTime(784, now + 0.16);
+                    gain.gain.setValueAtTime(0.13, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btn-sound').textContent = soundEnabled ? '🔊 効果音: ON' : '🔇 効果音: OFF';
+        }
+
+        function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
+        function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+        function openCoachModal() {
+            const gto = getCurrentHeroGTO();
+            document.getElementById('mobile-coach-body').innerHTML = `
+                <div class="grid grid-cols-3 gap-2 text-center bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <div><div class="text-[10px] text-slate-400">ハンド</div><div class="text-base font-black text-amber-400 mono mt-0.5">${gto.handCode}</div></div>
+                    <div><div class="text-[10px] text-slate-400">推定勝率</div><div class="text-base font-black text-emerald-400 mono mt-0.5">${gto.equity}%</div></div>
+                    <div><div class="text-[10px] text-slate-400">必要勝率</div><div class="text-base font-black text-sky-400 mono mt-0.5">${gto.potOdds}%</div></div>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                    <div class="flex justify-between"><span class="text-slate-400">状況:</span><span class="font-bold text-indigo-300">${gto.spotLabel}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">質感/役:</span><span class="font-bold text-amber-300">${gto.boardTexture}</span></div>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <div class="flex justify-between text-[11px] font-bold mb-1">
+                        <span class="text-rose-400">Raise: ${gto.raise}%</span>
+                        <span class="text-emerald-400">Call/Check: ${gto.call}%</span>
+                        <span class="text-slate-400">Fold: ${gto.fold}%</span>
+                    </div>
+                    <div class="w-full h-3.5 rounded-lg overflow-hidden flex bg-slate-800">
+                        <div class="bg-rose-500 h-full" style="width:${gto.raise}%"></div>
+                        <div class="bg-emerald-500 h-full" style="width:${gto.call}%"></div>
+                        <div class="bg-slate-700 h-full" style="width:${gto.fold}%"></div>
+                    </div>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-slate-200 leading-relaxed">${gto.reason}</div>
+            `;
+            document.getElementById('coach-modal').classList.remove('hidden');
+        }
+        function closeCoachModal() { document.getElementById('coach-modal').classList.add('hidden'); }
+
+        // =========================================================================
+        // 2. 169ハンド強度 ＆ 3種GTOプリフロップ混合戦略エンジン
+        // =========================================================================
+        function getHandCode(cards) {
+            if (!cards || cards.length < 2) return '--';
+            const c1 = cards[0], c2 = cards[1];
+            if (c1.value === c2.value) return c1.rank + c2.rank;
+            const hi = c1.value > c2.value ? c1 : c2;
+            const lo = c1.value > c2.value ? c2 : c1;
+            return hi.rank + lo.rank + (hi.suit === lo.suit ? 's' : 'o');
+        }
+
+        const HAND_POWER = {};
+        (function initHandPower() {
+            for (let i = 0; i < 13; i++) {
+                for (let j = 0; j < 13; j++) {
+                    const r1 = RANKS[i], r2 = RANKS[j];
+                    const v1 = RANK_VAL[r1], v2 = RANK_VAL[r2];
+                    let code = '', score = 0;
+                    if (i === j) {
+                        code = r1 + r2;
+                        score = 52 + v1 * 3.4;
+                    } else if (i < j) {
+                        code = r1 + r2 + 's';
+                        const gap = v1 - v2;
+                        const conn = gap === 1 ? 7 : (gap === 2 ? 4 : (gap === 3 ? 1.5 : 0));
+                        const wheel = (v1 === 14 && v2 <= 5) ? 6 : 0;
+                        score = v1 * 3.8 + v2 * 2.1 + 9 + conn + wheel;
+                    } else {
+                        code = r2 + r1 + 'o';
+                        const hi = v2, lo = v1, gap = hi - lo;
+                        const conn = gap === 1 ? 4 : (gap === 2 ? 1.5 : 0);
+                        score = hi * 3.6 + lo * 1.9 - 4 + conn;
+                    }
+                    HAND_POWER[code] = Math.min(99.5, Math.max(10, Math.round(score * 10) / 10));
+                }
+            }
+            Object.assign(HAND_POWER, {
+                'AA':100,'KK':98,'QQ':95,'JJ':91,'TT':88,'99':83,'88':79,'77':75,'66':71,'55':68,
+                'AKs':96,'AKo':92,'AQs':90,'AQo':84,'AJs':86,'KQs':85,'A5s':77,'A4s':75,'KJs':81,'QJs':78,'JTs':77,'T9s':74
+            });
+        })();
+
+        function getGtoPreflopFreq(scenario, heroPos, villainPos, handCode) {
+            const p = HAND_POWER[handCode] || 40;
+            const isSuited = handCode.endsWith('s');
+            const isPair = handCode.length === 2;
+            const isAxSuited = handCode.startsWith('A') && isSuited;
+
+            if (scenario === 'rfi') {
+                const cut = { 'UTG': 74, 'MP': 69, 'CO': 62, 'BTN': 50, 'SB': 53, 'BB': 55 }[heroPos] || 65;
+                if (p >= cut + 4) return { raise: 100, call: 0, fold: 0 };
+                if (p >= cut) return { raise: 75, call: 0, fold: 25 };
+                if (p >= cut - 3 && (isSuited || isPair)) return { raise: 40, call: 0, fold: 60 };
+                return { raise: 0, call: 0, fold: 100 };
+            }
+            if (scenario === 'vs_open') {
+                const vTight = { 'UTG': 80, 'MP': 76, 'CO': 71, 'BTN': 64, 'SB': 62 }[villainPos] || 72;
+                if (p >= vTight + 10) return { raise: 95, call: 5, fold: 0 };
+                if (p >= vTight + 5) return { raise: 65, call: 35, fold: 0 };
+                if (heroPos === 'BB') {
+                    if (p >= vTight - 10) { const r = isAxSuited ? 35 : 15; return { raise: r, call: 100 - r, fold: 0 }; }
+                    if (p >= vTight - 17 && (isSuited || isPair)) return { raise: isAxSuited ? 25 : 0, call: isAxSuited ? 55 : 75, fold: 20 };
+                    return { raise: 0, call: 0, fold: 100 };
+                } else if (heroPos === 'SB') {
+                    if (p >= vTight - 2) return { raise: 75, call: 15, fold: 10 };
+                    if (isAxSuited && p >= 70) return { raise: 60, call: 0, fold: 40 };
+                    return { raise: 0, call: 0, fold: 100 };
+                } else {
+                    if (p >= vTight - 4) return { raise: 45, call: 55, fold: 0 };
+                    if ((isPair || isSuited) && p >= vTight - 9) return { raise: 25, call: 50, fold: 25 };
+                    return { raise: 0, call: 0, fold: 100 };
+                }
+            }
+            if (scenario === 'vs_3bet') {
+                const base = { 'UTG': 84, 'MP': 81, 'CO': 77, 'BTN': 73, 'SB': 74 }[heroPos] || 78;
+                if (p >= 94) return { raise: 90, call: 10, fold: 0 };
+                if (p >= base + 7) return { raise: 35, call: 65, fold: 0 };
+                if (p >= base) return { raise: 15, call: 70, fold: 15 };
+                if (isAxSuited && p >= 73) return { raise: 45, call: 15, fold: 40 };
+                if ((isPair || isSuited) && p >= base - 5) return { raise: 0, call: 45, fold: 55 };
+                return { raise: 0, call: 0, fold: 100 };
+            }
+            return { raise: 0, call: 0, fold: 100 };
+        }
+
+        // =========================================================================
+        // 3. ゲーム状態管理
+        // =========================================================================
+        let drillMode = 'normal';
+        let autoFoldNext = true;
+        let autoShowdownNext = false;
+        let aiTimer = null, nextHandTimer = null, toastTimer = null;
+
+        let state = {
+            handNum: 1, dealerIdx: 0, activeIdx: 0, street: 'preflop',
+            pot: 0, currentBet: 1.0, minRaiseTo: 2.0,
+            lastAggressorIdx: -1, firstRaiserIdx: -1, threeBettorIdx: -1, raiseCountThisStreet: 1,
+            deck: [], board: [], inProgress: false,
+            heroVpipThisHand: false, heroPfrThisHand: false,
+            reviewLogs: [],
+            stats: { hands: 0, wins: 0, profitBB: 0, vpipCount: 0, pfrCount: 0, gtoChecks: 0, gtoOptimal: 0, totalEvLoss: 0 },
+            players: [
+                { id: 0, name: 'Hero', isAI: false, profile: 'GTO', pos: 'BTN', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
+                { id: 1, name: 'AI-1', isAI: true, profile: 'BALANCED', pos: 'SB', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
+                { id: 2, name: 'AI-2', isAI: true, profile: 'AGGRO', pos: 'BB', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
+                { id: 3, name: 'AI-3', isAI: true, profile: 'TIGHT', pos: 'UTG', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
+                { id: 4, name: 'AI-4', isAI: true, profile: 'BALANCED', pos: 'MP', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
+                { id: 5, name: 'AI-5', isAI: true, profile: 'AGGRO', pos: 'CO', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' }
+            ]
+        };
+
+        try {
+            const saved = localStorage.getItem('tenfour_gto_v3_stats');
+            if (saved) state.stats = Object.assign(state.stats, JSON.parse(saved));
+        } catch (e) {}
+        function saveStats() {
+            try { localStorage.setItem('tenfour_gto_v3_stats', JSON.stringify(state.stats)); } catch (e) {}
+        }
+
+        function addLog(msg, cls = 'text-slate-300') {
+            const box = document.getElementById('action-log');
+            if (!box) return;
+            const d = document.createElement('div');
+            d.className = `${cls} leading-snug border-b border-slate-800/50 pb-1`;
+            d.textContent = msg;
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
+        }
+        function clearActionLog() { document.getElementById('action-log').innerHTML = ''; }
+
+        function showFastFoldToast(text) {
+            const el = document.getElementById('fast-fold-toast');
+            document.getElementById('fast-fold-toast-text').textContent = text;
+            el.classList.remove('hidden');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+        }
+
+        function toggleAutoFoldNext() {
+            autoFoldNext = !autoFoldNext;
+            const btn = document.getElementById('btn-auto-fold');
+            btn.textContent = autoFoldNext ? 'ON' : 'OFF';
+            btn.className = autoFoldNext
+                ? 'bg-emerald-600/30 text-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-500/40 transition shrink-0'
+                : 'bg-slate-800 text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 transition shrink-0';
+        }
+
+        function toggleAutoShowdownNext() {
+            autoShowdownNext = !autoShowdownNext;
+            const btn = document.getElementById('btn-auto-sd');
+            btn.textContent = autoShowdownNext ? 'ON' : 'OFF';
+            btn.className = autoShowdownNext
+                ? 'bg-sky-600/30 text-sky-200 px-3 py-1.5 rounded-lg text-xs font-bold border border-sky-500/40 transition shrink-0'
+                : 'bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 transition shrink-0';
+            if (autoShowdownNext && !state.inProgress) startNewHand();
+        }
+
+        function changeDrillMode(m) { drillMode = m; closeSettingsModal(); startNewHand(); }
+        function resetAllStacks() {
+            state.players.forEach(p => p.stack = 100);
+            addLog('🔄 全プレイヤーを 100BB に補充しました', 'text-amber-300 font-bold');
+            renderAll();
+        }
+
+        // =========================================================================
+        // 4. ハンド開始＆特訓モード初期化
+        // =========================================================================
+        function createDeck() {
+            const d = [];
+            for (const s of SUITS) for (const r of RANKS) d.push({ rank: r, suit: s, value: RANK_VAL[r] });
+            for (let i = d.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [d[i], d[j]] = [d[j], d[i]];
+            }
+            return d;
+        }
+
+        function assignPositions() {
+            const order = ['BTN', 'SB', 'BB', 'UTG', 'MP', 'CO'];
+            for (let i = 0; i < 6; i++) state.players[(state.dealerIdx + i) % 6].pos = order[i];
+        }
+
+        function postChip(seatIdx, amount, actionText, actionType) {
+            const p = state.players[seatIdx];
+            const actual = roundBB(Math.min(p.stack, amount));
+            p.stack = roundBB(p.stack - actual);
+            p.bet = roundBB(p.bet + actual);
+            p.totalIn = roundBB(p.totalIn + actual);
+            if (p.stack <= 0) p.allIn = true;
+            p.actionText = actionText;
+            p.actionType = actionType;
+            state.pot = roundBB(state.pot + actual);
+        }
+
+        function startNewHand() {
+            if (aiTimer) clearTimeout(aiTimer);
+            if (nextHandTimer) clearTimeout(nextHandTimer);
+
+            state.deck = createDeck();
+            state.board = [];
+            state.street = 'preflop';
+            state.pot = 0;
+            state.currentBet = 1.0;
+            state.minRaiseTo = 2.0;
+            state.lastAggressorIdx = -1;
+            state.firstRaiserIdx = -1;
+            state.threeBettorIdx = -1;
+            state.raiseCountThisStreet = 1;
+            state.inProgress = true;
+            state.heroVpipThisHand = false;
+            state.heroPfrThisHand = false;
+            state.lastWinnerText = '';
+
+            document.getElementById('gto-feedback-box').classList.add('hidden');
+            hideMistakeBanner();
+
+            state.players.forEach(p => {
+                if (p.stack < 25) p.stack = 100;
+                p.bet = 0; p.totalIn = 0; p.folded = false; p.allIn = false; p.acted = false;
+                p.cards = [state.deck.pop(), state.deck.pop()];
+                p.actionText = ''; p.actionType = ''; p.showdownHand = null;
+            });
+
+            if (drillMode === 'normal') {
+                state.dealerIdx = (state.dealerIdx + 1) % 6;
+                assignPositions();
+                const sbIdx = state.players.findIndex(p => p.pos === 'SB');
+                const bbIdx = state.players.findIndex(p => p.pos === 'BB');
+                const utgIdx = state.players.findIndex(p => p.pos === 'UTG');
+                postChip(sbIdx, 0.5, 'SB 0.5BB', 'blind');
+                postChip(bbIdx, 1.0, 'BB 1BB', 'blind');
+                state.lastAggressorIdx = bbIdx;
+                state.activeIdx = utgIdx;
+                addLog(`━━ ハンド #${state.handNum} (${state.players[0].pos} / ${getHandCode(state.players[0].cards)}) ━━`, 'text-emerald-400 font-bold');
+            } else if (drillMode === 'srp_btn_bb') {
+                state.dealerIdx = (state.handNum % 2 === 0) ? 4 : 0;
+                assignPositions();
+                state.players.forEach(p => {
+                    if (p.pos !== 'BTN' && p.pos !== 'BB') { p.folded = true; p.actionText = 'Fold'; p.actionType = 'fold'; }
+                });
+                const sbIdx = state.players.findIndex(p => p.pos === 'SB');
+                const bbIdx = state.players.findIndex(p => p.pos === 'BB');
+                const btnIdx = state.players.findIndex(p => p.pos === 'BTN');
+                postChip(sbIdx, 0.5, 'Fold', 'fold');
+                postChip(bbIdx, 1.0, 'BB 1BB', 'blind');
+                postChip(btnIdx, 2.5, 'Raise 2.5BB', 'raise');
+                state.players[btnIdx].acted = true;
+                state.currentBet = 2.5; state.minRaiseTo = 5.0; state.raiseCountThisStreet = 2;
+                state.firstRaiserIdx = btnIdx; state.lastAggressorIdx = btnIdx; state.activeIdx = bbIdx;
+                addLog(`🔥 【特訓: BTN vs BB】BTNが Raise 2.5BB、BBの番`, 'text-amber-300 font-bold');
+            } else if (drillMode === '3bp_co_btn') {
+                state.dealerIdx = (state.handNum % 2 === 1) ? 1 : 0;
+                assignPositions();
+                state.players.forEach(p => {
+                    if (p.pos !== 'CO' && p.pos !== 'BTN') { p.folded = true; p.actionText = 'Fold'; p.actionType = 'fold'; }
+                });
+                const sbIdx = state.players.findIndex(p => p.pos === 'SB');
+                const bbIdx = state.players.findIndex(p => p.pos === 'BB');
+                const coIdx = state.players.findIndex(p => p.pos === 'CO');
+                const btnIdx = state.players.findIndex(p => p.pos === 'BTN');
+                postChip(sbIdx, 0.5, 'Fold', 'fold');
+                postChip(bbIdx, 1.0, 'Fold', 'fold');
+                postChip(coIdx, 2.5, 'Raise 2.5BB', 'raise');
+                postChip(btnIdx, 7.5, '3Bet 7.5BB', '3bet');
+                state.players[btnIdx].acted = true;
+                state.currentBet = 7.5; state.minRaiseTo = 16.0; state.raiseCountThisStreet = 3;
+                state.firstRaiserIdx = coIdx; state.threeBettorIdx = btnIdx; state.lastAggressorIdx = btnIdx; state.activeIdx = coIdx;
+                addLog(`⚡ 【特訓: 対3Bet】BTNが 3Bet 7.5BB、COの番`, 'text-rose-300 font-bold');
+            } else if (drillMode === 'bvb_sb_bb') {
+                state.dealerIdx = (state.handNum % 2 === 1) ? 5 : 4;
+                assignPositions();
+                state.players.forEach(p => {
+                    if (p.pos !== 'SB' && p.pos !== 'BB') { p.folded = true; p.actionText = 'Fold'; p.actionType = 'fold'; }
+                });
+                const sbIdx = state.players.findIndex(p => p.pos === 'SB');
+                const bbIdx = state.players.findIndex(p => p.pos === 'BB');
+                postChip(sbIdx, 0.5, 'SB 0.5BB', 'blind');
+                postChip(bbIdx, 1.0, 'BB 1BB', 'blind');
+                state.lastAggressorIdx = bbIdx; state.activeIdx = sbIdx;
+                addLog(`⚔️ 【特訓: SB vs BB】SBの番から開始`, 'text-amber-300 font-bold');
+            }
+
+            playSound('deal');
+            updateSliderBounds();
+            renderAll();
+            processTurn();
+        }
+
+        // =========================================================================
+        // 5. アクション進行＆Fast-Fold (約0.6秒で次ハンド自動進行)
+        // =========================================================================
+        function processTurn() {
+            if (!state.inProgress) return;
+            const live = state.players.filter(p => !p.folded);
+            if (live.length <= 1) {
+                awardUncontested(live[0], false);
+                return;
+            }
+            if (isStreetComplete()) {
+                advanceStreet(false);
+                return;
+            }
+            const cur = state.players[state.activeIdx];
+            if (cur.folded || cur.allIn) {
+                moveToNextSeat();
+                processTurn();
+                return;
+            }
+            renderAll();
+            if (cur.isAI) {
+                aiTimer = setTimeout(() => executeAITurn(cur, false), 360);
+            } else {
+                updateSliderBounds();
+                renderAll();
+            }
+        }
+
+        function isStreetComplete() {
+            const live = state.players.filter(p => !p.folded);
+            if (live.length <= 1) return true;
+            const canAct = live.filter(p => !p.allIn);
+            if (canAct.length === 0) return true;
+            return canAct.every(p => p.acted && Math.abs(p.bet - state.currentBet) < 0.05);
+        }
+
+        function moveToNextSeat() {
+            for (let i = 1; i <= 6; i++) {
+                const idx = (state.activeIdx + i) % 6;
+                const p = state.players[idx];
+                if (!p.folded && !p.allIn) { state.activeIdx = idx; return; }
+            }
+        }
+
+        function heroAction(actionType) {
+            if (!state.inProgress || state.activeIdx !== 0) return;
+            const hero = state.players[0];
+            const toCall = roundBB(Math.max(0, state.currentBet - hero.bet));
+
+            evaluateHeroDecision(actionType, toCall);
+
+            if (actionType === 'fold') {
+                if (toCall <= 0) {
+                    applyAction(0, 'call', 0, false);
+                } else {
+                    applyAction(0, 'fold', 0, false);
+                    if (autoFoldNext && state.inProgress) {
+                        fastForwardRemainderAndDealNext();
+                        return;
+                    }
+                }
+            } else if (actionType === 'call') {
+                applyAction(0, 'call', 0, false);
+            } else if (actionType === 'raise') {
+                const inputEl = document.getElementById('bet-input');
+                const val = parseFloat(inputEl ? inputEl.value : state.minRaiseTo) || state.minRaiseTo;
+                applyAction(0, 'raise', val, false);
+            }
+
+            if (state.inProgress) {
+                moveToNextSeat();
+                processTurn();
+            }
+        }
+
+        function applyAction(seatIdx, type, targetBetBB, silent = false) {
+            const p = state.players[seatIdx];
+            const toCall = roundBB(Math.max(0, state.currentBet - p.bet));
+
+            if (type === 'fold') {
+                p.folded = true;
+                p.acted = true;
+                p.actionText = 'Fold';
+                p.actionType = 'fold';
+                if (!silent) {
+                    playSound('fold');
+                    addLog(`${p.pos} (${p.name}): Fold`, 'text-slate-500');
+                }
+                return;
+            }
+
+            if (type === 'call') {
+                if (toCall <= 0) {
+                    p.acted = true;
+                    p.actionText = 'Check';
+                    p.actionType = 'check';
+                    if (!silent) {
+                        playSound('deal');
+                        addLog(`${p.pos} (${p.name}): Check`, 'text-sky-300');
+                    }
+                } else {
+                    const add = roundBB(Math.min(p.stack, toCall));
+                    p.stack = roundBB(p.stack - add);
+                    p.bet = roundBB(p.bet + add);
+                    p.totalIn = roundBB(p.totalIn + add);
+                    state.pot = roundBB(state.pot + add);
+                    p.acted = true;
+                    if (p.stack <= 0) {
+                        p.allIn = true;
+                        p.actionText = `All-in ${fmtBB(p.bet)}`;
+                        p.actionType = 'allin';
+                    } else {
+                        p.actionText = `Call ${fmtBB(p.bet)}`;
+                        p.actionType = 'call';
+                    }
+                    if (seatIdx === 0 && state.street === 'preflop') state.heroVpipThisHand = true;
+                    if (!silent) {
+                        playSound('chip');
+                        addLog(`${p.pos} (${p.name}): ${p.actionText}`, 'text-emerald-300');
+                    }
+                }
+                return;
+            }
+
+            if (type === 'raise') {
+                const maxTotal = roundBB(p.bet + p.stack);
+                const finalTarget = roundBB(Math.min(maxTotal, Math.max(state.minRaiseTo, targetBetBB)));
+                const diff = roundBB(Math.max(0, finalTarget - p.bet));
+                const wasUnbetPostflop = (state.street !== 'preflop' && state.currentBet <= 0);
+
+                p.stack = roundBB(p.stack - diff);
+                p.bet = roundBB(p.bet + diff);
+                p.totalIn = roundBB(p.totalIn + diff);
+                state.pot = roundBB(state.pot + diff);
+                p.acted = true;
+
+                if (p.bet > state.currentBet) {
+                    const step = roundBB(p.bet - state.currentBet);
+                    state.currentBet = p.bet;
+                    state.minRaiseTo = roundBB(state.currentBet + Math.max(1.0, step));
+                    state.raiseCountThisStreet++;
+                    state.lastAggressorIdx = seatIdx;
+                    if (state.street === 'preflop') {
+                        if (state.raiseCountThisStreet === 2) state.firstRaiserIdx = seatIdx;
+                        if (state.raiseCountThisStreet === 3) state.threeBettorIdx = seatIdx;
+                    }
+                    state.players.forEach((o, idx) => {
+                        if (idx !== seatIdx && !o.folded && !o.allIn) o.acted = false;
+                    });
+                }
+
+                if (seatIdx === 0 && state.street === 'preflop') {
+                    state.heroVpipThisHand = true;
+                    state.heroPfrThisHand = true;
+                }
+
+                if (p.stack <= 0) {
+                    p.allIn = true;
+                    p.actionText = `All-in ${fmtBB(p.bet)}`;
+                    p.actionType = 'allin';
+                } else if (state.street === 'preflop') {
+                    if (state.raiseCountThisStreet === 2) {
+                        p.actionText = `Raise ${fmtBB(p.bet)}`;
+                        p.actionType = 'raise';
+                    } else if (state.raiseCountThisStreet === 3) {
+                        p.actionText = `3Bet ${fmtBB(p.bet)}`;
+                        p.actionType = '3bet';
+                    } else {
+                        p.actionText = `4Bet ${fmtBB(p.bet)}`;
+                        p.actionType = '3bet';
+                    }
+                } else {
+                    p.actionText = wasUnbetPostflop ? `Bet ${fmtBB(p.bet)}` : `Raise ${fmtBB(p.bet)}`;
+                    p.actionType = wasUnbetPostflop ? 'raise' : '3bet';
+                }
+
+                if (!silent) {
+                    playSound('chip');
+                    addLog(`${p.pos} (${p.name}): ${p.actionText}`, 'text-rose-400 font-bold');
+                }
+            }
+        }
+
+        function fastForwardRemainderAndDealNext() {
+            if (aiTimer) clearTimeout(aiTimer);
+            let guard = 0;
+            while (state.inProgress && guard < 60) {
+                guard++;
+                const live = state.players.filter(p => !p.folded);
+                if (live.length <= 1) { awardUncontested(live[0], true); break; }
+                if (isStreetComplete()) { advanceStreet(true); continue; }
+                moveToNextSeat();
+                const cur = state.players[state.activeIdx];
+                if (!cur.folded && !cur.allIn) executeAITurn(cur, true);
+            }
+            renderAll();
+            nextHandTimer = setTimeout(() => startNewHand(), 600);
+        }
+
+        function advanceStreet(silent = false) {
+            state.players.forEach(p => {
+                p.bet = 0;
+                p.acted = false;
+                if (!p.folded && !p.allIn) {
+                    p.actionText = '';
+                    p.actionType = '';
+                }
+            });
+            state.currentBet = 0;
+            state.minRaiseTo = 1.0;
+            state.raiseCountThisStreet = 0;
+            state.lastAggressorIdx = -1;
+
+            if (state.street === 'preflop') {
+                state.street = 'flop';
+                state.board.push(state.deck.pop(), state.deck.pop(), state.deck.pop());
+                if (!silent) addLog(`── フロップ [${fmtCardsStr(state.board)}] Pot: ${fmtBB(state.pot)} ──`, 'text-amber-300 font-bold');
+            } else if (state.street === 'flop') {
+                state.street = 'turn';
+                state.board.push(state.deck.pop());
+                if (!silent) addLog(`── ターン [${fmtCardsStr(state.board)}] Pot: ${fmtBB(state.pot)} ──`, 'text-amber-300 font-bold');
+            } else if (state.street === 'turn') {
+                state.street = 'river';
+                state.board.push(state.deck.pop());
+                if (!silent) addLog(`── リバー [${fmtCardsStr(state.board)}] Pot: ${fmtBB(state.pot)} ──`, 'text-amber-300 font-bold');
+            } else {
+                evaluateShowdown(silent);
+                return;
+            }
+
+            const canAct = state.players.filter(p => !p.folded && !p.allIn);
+            if (canAct.length <= 1) {
+                advanceStreet(silent);
+                return;
+            }
+
+            const postOrder = ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN'];
+            for (const posName of postOrder) {
+                const idx = state.players.findIndex(p => p.pos === posName && !p.folded && !p.allIn);
+                if (idx !== -1) { state.activeIdx = idx; break; }
+            }
+
+            if (!silent) {
+                playSound('deal');
+                renderAll();
+                processTurn();
+            }
+        }
+
+        // =========================================================================
+        // 6. GTO AI思考 ＆ ポストフロップ解析 ＆ ミスプレイ即時警告バナー
+        // =========================================================================
+        function executeAITurn(ai, silent = false) {
+            if (!state.inProgress) return;
+            const toCall = roundBB(Math.max(0, state.currentBet - ai.bet));
+            const handCode = getHandCode(ai.cards);
+            const aggroBias = ai.profile === 'AGGRO' ? 8 : (ai.profile === 'TIGHT' ? -6 : 0);
+
+            if (state.street === 'preflop') {
+                let scenario = 'rfi', villainPos = 'UTG';
+                if (state.raiseCountThisStreet === 2) {
+                    scenario = 'vs_open';
+                    villainPos = state.firstRaiserIdx >= 0 ? state.players[state.firstRaiserIdx].pos : 'CO';
+                } else if (state.raiseCountThisStreet >= 3) {
+                    scenario = 'vs_3bet';
+                    villainPos = state.threeBettorIdx >= 0 ? state.players[state.threeBettorIdx].pos : 'BTN';
+                }
+
+                if (scenario === 'rfi' && ai.pos === 'BB' && toCall <= 0) {
+                    applyAction(ai.id, 'call', 0, silent);
+                } else {
+                    const freq = getGtoPreflopFreq(scenario, ai.pos, villainPos, handCode);
+                    const roll = Math.random() * 100;
+                    const rCut = Math.max(0, Math.min(100, freq.raise + aggroBias));
+                    const cCut = rCut + freq.call;
+
+                    if (roll < rCut && state.raiseCountThisStreet < 4) {
+                        const target = scenario === 'rfi'
+                            ? (ai.pos === 'SB' ? 3.0 : 2.5)
+                            : (scenario === 'vs_open' ? roundBB(state.currentBet * 3.0) : roundBB(state.currentBet * 2.3));
+                        applyAction(ai.id, 'raise', target, silent);
+                    } else if (roll < cCut || toCall <= 0) {
+                        applyAction(ai.id, 'call', 0, silent);
+                    } else {
+                        applyAction(ai.id, 'fold', 0, silent);
+                    }
+                }
+            } else {
+                const post = analyzePostflopGTO(ai);
+                const roll = Math.random() * 100;
+                const rCut = Math.max(0, Math.min(100, post.raise + aggroBias));
+                const cCut = rCut + post.call;
+
+                if (roll < rCut && state.raiseCountThisStreet < 3) {
+                    const betSize = state.currentBet <= 0
+                        ? roundBB(Math.max(1.0, state.pot * post.recSizeRatio))
+                        : roundBB(state.currentBet * 2.5);
+                    applyAction(ai.id, 'raise', betSize, silent);
+                } else if (roll < cCut || toCall <= 0) {
+                    applyAction(ai.id, 'call', 0, silent);
+                } else {
+                    applyAction(ai.id, 'fold', 0, silent);
+                }
+            }
+
+            if (!silent && state.inProgress) {
+                moveToNextSeat();
+                processTurn();
+            }
+        }
+
+        function classifyBoardTexture(board) {
+            if (!board || board.length < 3) return { label: 'プリフロップ', recRatio: 0.33 };
+            const suits = {};
+            const vals = board.map(c => c.value).sort((a,b) => b - a);
+            board.forEach(c => suits[c.suit] = (suits[c.suit] || 0) + 1);
+            const maxSuit = Math.max(...Object.values(suits));
+            let paired = false;
+            for (let i = 0; i < vals.length - 1; i++) if (vals[i] === vals[i+1]) paired = true;
+            const span = vals[0] - vals[vals.length - 1];
+
+            if (maxSuit >= 3) return { label: 'モノトーン (33%小サイズ推奨)', recRatio: 0.33 };
+            if (paired) return { label: 'ペアボード (33%高頻度CB)', recRatio: 0.33 };
+            if (maxSuit === 2 && span <= 5) return { label: 'ウェットボード (66%サイズ推奨)', recRatio: 0.66 };
+            if (vals[0] >= 12) return { label: 'ドライ・ハイカード (33%CB推奨)', recRatio: 0.33 };
+            return { label: 'ミドルバランス (50%推奨)', recRatio: 0.50 };
+        }
+
+        function detectDraws(hole, board) {
+            if (!board || board.length < 3 || board.length >= 5) return { outs: 0, desc: '' };
+            const all = hole.concat(board);
+            const sc = {};
+            all.forEach(c => sc[c.suit] = (sc[c.suit] || 0) + 1);
+            const hasFD = Object.values(sc).some(n => n === 4);
+            const u = [...new Set(all.map(c => c.value))].sort((a,b) => a - b);
+            if (u.includes(14)) u.unshift(1);
+            let maxC = 1, cur = 1;
+            for (let i = 1; i < u.length; i++) {
+                if (u[i] === u[i-1] + 1) { cur++; maxC = Math.max(maxC, cur); } else cur = 1;
+            }
+            const hasSD = maxC >= 4;
+            if (hasFD && hasSD) return { outs: 15, desc: 'コンボドロー(15outs)' };
+            if (hasFD) return { outs: 9, desc: 'フラッシュドロー(9outs)' };
+            if (hasSD) return { outs: 8, desc: 'ストレートドロー(8outs)' };
+            return { outs: 0, desc: '' };
+        }
+
+        function analyzePostflopGTO(player) {
+            const evalRes = eval7(player.cards.concat(state.board));
+            const tex = classifyBoardTexture(state.board);
+            const draw = detectDraws(player.cards, state.board);
+            const toCall = roundBB(Math.max(0, state.currentBet - player.bet));
+            const potOdds = toCall > 0 ? Math.round((toCall / (state.pot + toCall)) * 100) : 0;
+            const baseEq = [34, 62, 79, 86, 91, 94, 97, 99, 100][evalRes.category];
+            const equity = Math.min(99, Math.round(baseEq + draw.outs * (state.street === 'flop' ? 3.8 : 2.1)));
+
+            let raise = 0, call = 0, fold = 0, reason = '';
+            if (toCall <= 0) {
+                if (evalRes.category >= 2) {
+                    raise = 85; call = 15; fold = 0;
+                    reason = `${evalRes.nameJa}の強ハンドです。ポット${Math.round(tex.recRatio*100)}%サイズでのバリューベットがGTO推奨です。`;
+                } else if (evalRes.category === 1) {
+                    raise = 55; call = 45; fold = 0;
+                    reason = `${evalRes.nameJa}です。${tex.label}のため、小〜中サイズCベットとCheckを混合します。`;
+                } else if (draw.outs >= 8) {
+                    raise = 65; call = 35; fold = 0;
+                    reason = `${draw.desc}があります。セミブラフベットでフォールドエクイティを獲得するのが有効です。`;
+                } else {
+                    raise = 25; call = 75; fold = 0;
+                    reason = `${evalRes.nameJa}です。Check主体でポットコントロールし、一部のみブラフに回します。`;
+                }
+            } else {
+                if (equity >= potOdds + 28) {
+                    raise = 45; call = 55; fold = 0;
+                    reason = `推定エクイティ(${equity}%)が必要勝率(${potOdds}%)を大きく上回っています。CallまたはRaiseが推奨されます。`;
+                } else if (equity >= potOdds - 2) {
+                    raise = draw.outs >= 8 ? 20 : 5; call = 90 - raise; fold = 10;
+                    reason = `推定エクイティ(${equity}%)が必要勝率(${potOdds}%)を満たしているため、Callでディフェンスします。`;
+                } else {
+                    raise = 5; call = 10; fold = 85;
+                    reason = `推定エクイティ(${equity}%)が必要勝率(${potOdds}%)に届いていません。FoldがGTO推奨です。`;
+                }
+            }
+
+            return {
+                equity, potOdds, raise, call, fold, reason,
+                textureLabel: draw.desc ? `${tex.label} / ${draw.desc}` : `${tex.label} (${evalRes.nameJa})`,
+                recSizeRatio: tex.recRatio
+            };
+        }
+
+        function getCurrentHeroGTO() {
+            const hero = state.players[0];
+            const handCode = getHandCode(hero.cards);
+            const toCall = roundBB(Math.max(0, state.currentBet - hero.bet));
+            const potOdds = toCall > 0 ? Math.round((toCall / (state.pot + toCall)) * 100) : 0;
+
+            if (state.street === 'preflop') {
+                let scenario = 'rfi', villainPos = 'UTG', spotLabel = `${hero.pos} オープン判断 (RFI)`;
+                if (state.raiseCountThisStreet === 2 && state.firstRaiserIdx !== 0) {
+                    scenario = 'vs_open';
+                    villainPos = state.firstRaiserIdx >= 0 ? state.players[state.firstRaiserIdx].pos : 'CO';
+                    spotLabel = `${hero.pos} vs ${villainPos} Open`;
+                } else if (state.raiseCountThisStreet >= 3) {
+                    scenario = 'vs_3bet';
+                    villainPos = state.threeBettorIdx >= 0 ? state.players[state.threeBettorIdx].pos : 'BTN';
+                    spotLabel = `${hero.pos} vs ${villainPos} 3Bet`;
+                }
+                const freq = getGtoPreflopFreq(scenario, hero.pos, villainPos, handCode);
+                const eq = Math.min(85, Math.max(32, Math.round((HAND_POWER[handCode] || 50) * 0.78)));
+                let reason = '';
+                if (freq.raise >= 60) reason = `【${spotLabel}】${handCode} はRaise/3Bet主体のコアレンジ (推奨 ${freq.raise}%) です。`;
+                else if (freq.call >= 50) reason = `【${spotLabel}】${handCode} はCallでディフェンスする頻度 (${freq.call}%) が高いハンドです。`;
+                else if (freq.raise + freq.call >= 30) reason = `【${spotLabel}】${handCode} は混合戦略 (Raise ${freq.raise}% / Call ${freq.call}% / Fold ${freq.fold}%) の境界ハンドです。`;
+                else reason = `【${spotLabel}】${handCode} はレンジ外のため Fold (${freq.fold}%) がGTO推奨です。`;
+
+                return { handCode, equity: eq, potOdds, spotLabel, boardTexture: 'プリフロップ (100BB)', raise: freq.raise, call: freq.call, fold: freq.fold, reason, scenario, heroPos: hero.pos, villainPos };
+            } else {
+                const post = analyzePostflopGTO(hero);
+                return { handCode, equity: post.equity, potOdds: post.potOdds, spotLabel: `${state.street.toUpperCase()} (${hero.pos})`, boardTexture: post.textureLabel, raise: post.raise, call: post.call, fold: post.fold, reason: post.reason, scenario: 'rfi', heroPos: hero.pos, villainPos: 'BTN' };
+            }
+        }
+
+        function getBestGtoActionText(gto, toCall) {
+            if (gto.raise >= gto.call && gto.raise >= gto.fold) return `${state.currentBet > 0 ? 'Raise' : 'Bet'} ${gto.raise}%`;
+            if (gto.call >= gto.raise && gto.call >= gto.fold) return `${toCall <= 0 ? 'Check' : 'Call'} ${gto.call}%`;
+            return `Fold ${gto.fold}%`;
+        }
+
+        function showMistakeBanner(isMajor, chosenLabel, chosenFreq, recText, evLoss, reason, spotSnapshot) {
+            lastBannerSpot = spotSnapshot;
+            const banner = document.getElementById('gto-mistake-banner');
+            const sev = document.getElementById('banner-severity');
+            if (isMajor) {
+                sev.textContent = '🚨 GTO重大ミス！';
+                sev.className = 'bg-rose-600 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md';
+            } else {
+                sev.textContent = '⚠️ GTO乖離';
+                sev.className = 'bg-amber-500 text-slate-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md';
+            }
+            document.getElementById('banner-vs-text').textContent = `自分: ${chosenLabel}(${chosenFreq}%) vs GTO推奨: ${recText}`;
+            document.getElementById('banner-ev-loss').textContent = `EVロス: -${evLoss.toFixed(2)}BB`;
+            document.getElementById('banner-reason').textContent = reason;
+            banner.classList.remove('hidden');
+            playSound('warn');
+        }
+
+        function hideMistakeBanner() {
+            document.getElementById('gto-mistake-banner').classList.add('hidden');
+        }
+
+        function openBannerRange() {
+            if (lastBannerSpot) {
+                chartState.scenario = lastBannerSpot.scenario;
+                chartState.heroPos = lastBannerSpot.heroPos;
+                chartState.villainPos = lastBannerSpot.villainPos;
+                validateChartPositions();
+                renderRangeChart();
+                document.getElementById('range-modal').classList.remove('hidden');
+            } else {
+                openRangeModal(true);
+            }
+        }
+
+        function updateMistakeBadge() {
+            const count = state.reviewLogs.filter(x => x.isMistake).length;
+            const badge = document.getElementById('mistake-badge');
+            if (badge) badge.textContent = `${count}`;
+        }
+
+        function evaluateHeroDecision(chosenType, toCall) {
+            const gto = getCurrentHeroGTO();
+            let chosenFreq = 0, actLabel = '';
+            if (chosenType === 'raise') { chosenFreq = gto.raise; actLabel = state.currentBet > 0 ? 'Raise' : 'Bet'; }
+            else if (chosenType === 'call') { chosenFreq = toCall <= 0 ? (gto.call + gto.fold) : gto.call; actLabel = toCall <= 0 ? 'Check' : 'Call'; }
+            else { chosenFreq = toCall <= 0 ? 0 : gto.fold; actLabel = 'Fold'; }
+
+            const maxFreq = Math.max(gto.raise, gto.call, gto.fold);
+            const recText = getBestGtoActionText(gto, toCall);
+            let grade = '', boxCls = '', evLoss = 0, isMistake = false;
+            state.stats.gtoChecks++;
+
+            if (chosenFreq >= maxFreq - 15 || chosenFreq >= 45) {
+                grade = `✅ GTO最適 (${actLabel}: 推奨 ${chosenFreq}%)`;
+                boxCls = 'bg-emerald-950/90 border-emerald-500 text-emerald-200';
+                state.stats.gtoOptimal++;
+                hideMistakeBanner();
+            } else if (chosenFreq >= 15) {
+                grade = `⚖️ 混合戦略内 (${actLabel}: ${chosenFreq}%)`;
+                boxCls = 'bg-amber-950/90 border-amber-500 text-amber-200';
+                state.stats.gtoOptimal += 0.7;
+                evLoss = 0.08;
+                hideMistakeBanner();
+            } else {
+                isMistake = true;
+                const isMajor = (chosenFreq === 0 && maxFreq >= 75);
+                grade = isMajor
+                    ? `🚨 GTO重大ミス (${actLabel}: 推奨 ${chosenFreq}%)`
+                    : `⚠️ GTO乖離 (${actLabel}: 推奨 ${chosenFreq}%)`;
+                boxCls = 'bg-rose-950/90 border-rose-500 text-rose-200';
+                evLoss = roundBB(Math.max(0.25, (maxFreq - chosenFreq) * (isMajor ? 0.015 : 0.011)));
+                showMistakeBanner(isMajor, actLabel, chosenFreq, recText, evLoss, gto.reason, {
+                    scenario: gto.scenario, heroPos: gto.heroPos, villainPos: gto.villainPos
+                });
+            }
+
+            state.stats.totalEvLoss = roundBB(state.stats.totalEvLoss + evLoss);
+            saveStats();
+
+            const fbBox = document.getElementById('gto-feedback-box');
+            fbBox.className = `rounded-xl p-2.5 border text-xs font-bold flex items-center justify-between ${boxCls}`;
+            document.getElementById('gto-feedback-title').textContent = grade;
+            document.getElementById('gto-feedback-ev').textContent = `EVロス: -${evLoss.toFixed(2)} BB`;
+            fbBox.classList.remove('hidden');
+
+            state.reviewLogs.unshift({
+                handNum: state.handNum, street: state.street, pos: state.players[0].pos,
+                handCode: gto.handCode, chosen: actLabel, recText, grade, evLoss, isMistake,
+                reason: gto.reason,
+                freqs: `R:${gto.raise}% / C:${gto.call}% / F:${gto.fold}%`
+            });
+            if (state.reviewLogs.length > 50) state.reviewLogs.pop();
+            updateMistakeBadge();
+        }
+
+        // =========================================================================
+        // 7. ショーダウン＆7枚役判定エンジン
+        // =========================================================================
+        function awardUncontested(winner, silent = false) {
+            state.inProgress = false;
+            winner.stack = roundBB(winner.stack + state.pot);
+            const hero = state.players[0];
+            recordHandResult(winner.id === 0, roundBB((winner.id === 0 ? state.pot : 0) - hero.totalIn));
+
+            const msg = `🏆 ${winner.pos} が ${fmtBB(state.pot)} 獲得`;
+            state.lastWinnerText = msg;
+            addLog(msg, 'text-amber-400 font-bold');
+
+            if (silent) showFastFoldToast(`⚡ 前ハンド: ${winner.pos} が ${fmtBB(state.pot)} 獲得`);
+            else {
+                playSound(winner.id === 0 ? 'win' : 'chip');
+                if (autoShowdownNext) nextHandTimer = setTimeout(() => startNewHand(), 1800);
+            }
+            state.handNum++;
+            renderAll();
+        }
+
+        function evaluateShowdown(silent = false) {
+            state.street = 'showdown';
+            state.inProgress = false;
+            const live = state.players.filter(p => !p.folded);
+            let bestScore = -1, winners = [];
+            live.forEach(p => {
+                const r = eval7(p.cards.concat(state.board));
+                p.showdownHand = r;
+                if (r.score > bestScore) { bestScore = r.score; winners = [p]; }
+                else if (r.score === bestScore) winners.push(p);
+            });
+            const share = roundBB(state.pot / winners.length);
+            winners.forEach(w => w.stack = roundBB(w.stack + share));
+
+            const hero = state.players[0];
+            const heroWon = winners.some(w => w.id === 0);
+            recordHandResult(heroWon, roundBB((heroWon ? share : 0) - hero.totalIn));
+
+            const winText = winners.map(w => `${w.pos}(${w.showdownHand.nameJa})`).join(' & ');
+            const msg = `🏆 ${winText} が ${fmtBB(share)} 獲得`;
+            state.lastWinnerText = msg;
+            addLog(msg, 'text-amber-400 font-bold');
+
+            if (silent) showFastFoldToast(`⚡ 前ハンド: ${winText} が ${fmtBB(share)} 獲得`);
+            else {
+                playSound(heroWon ? 'win' : 'chip');
+                if (autoShowdownNext) nextHandTimer = setTimeout(() => startNewHand(), 2100);
+            }
+            state.handNum++;
+            renderAll();
+        }
+
+        function recordHandResult(won, netBB) {
+            state.stats.hands++;
+            if (won) state.stats.wins++;
+            state.stats.profitBB = roundBB(state.stats.profitBB + netBB);
+            if (state.heroVpipThisHand) state.stats.vpipCount++;
+            if (state.heroPfrThisHand) state.stats.pfrCount++;
+            saveStats();
+        }
+
+        function eval7(cards) {
+            if (!cards || cards.length < 5) return { category: 0, score: 0, nameJa: 'ハイカード' };
+            const combos = getCombos5(cards, 5);
+            let best = { category: -1, score: -1, nameJa: 'ハイカード' };
+            for (const c5 of combos) {
+                const r = eval5(c5);
+                if (r.score > best.score) best = r;
+            }
+            return best;
+        }
+        function getCombos5(arr, k) {
+            if (k === 0) return [[]];
+            if (arr.length === 0) return [];
+            const [head, ...tail] = arr;
+            return getCombos5(tail, k - 1).map(c => [head, ...c]).concat(getCombos5(tail, k));
+        }
+        function eval5(five) {
+            const vals = five.map(c => c.value).sort((a,b) => b - a);
+            const suits = five.map(c => c.suit);
+            const isFlush = suits.every(s => s === suits[0]);
+            let isSt = false, stHigh = vals[0];
+            if (vals[0]-vals[1]===1 && vals[1]-vals[2]===1 && vals[2]-vals[3]===1 && vals[3]-vals[4]===1) isSt = true;
+            else if (vals[0]===14 && vals[1]===5 && vals[2]===4 && vals[3]===3 && vals[4]===2) { isSt = true; stHigh = 5; }
+
+            const counts = {};
+            vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
+            const groups = Object.keys(counts).map(v => ({ val: parseInt(v,10), count: counts[v] })).sort((a,b) => b.count - a.count || b.val - a.val);
+
+            let cat = 0, nameJa = 'ハイカード';
+            if (isSt && isFlush) { cat = 8; nameJa = stHigh === 14 ? 'ロイヤルフラッシュ' : 'ストレートフラッシュ'; }
+            else if (groups[0].count === 4) { cat = 7; nameJa = `フォーカード(${VAL_RANK[groups[0].val]})`; }
+            else if (groups[0].count === 3 && groups[1].count === 2) { cat = 6; nameJa = `フルハウス`; }
+            else if (isFlush) { cat = 5; nameJa = `フラッシュ`; }
+            else if (isSt) { cat = 4; nameJa = `ストレート`; }
+            else if (groups[0].count === 3) { cat = 3; nameJa = `スリーカード`; }
+            else if (groups[0].count === 2 && groups[1].count === 2) { cat = 2; nameJa = `ツーペア`; }
+            else if (groups[0].count === 2) { cat = 1; nameJa = `ワンペア(${VAL_RANK[groups[0].val]})`; }
+            else { cat = 0; nameJa = `${VAL_RANK[vals[0]]}ハイ`; }
+
+            const ord = isSt ? [stHigh,0,0,0,0] : groups.map(g => g.val);
+            let score = cat * 1e10;
+            for (let i = 0; i < ord.length; i++) score += ord[i] * Math.pow(15, 4 - i);
+            return { category: cat, score, nameJa };
+        }
+
+        // =========================================================================
+        // 8. カード＆座席描画 (指定カードサイズ ＆ バイシクルライダーバックSVG)
+        // =========================================================================
+        function fmtCardsStr(cards) { return cards.map(c => `${c.rank}${SUIT_SYM[c.suit]}`).join(' '); }
+
+        function renderBicycleBackHTML(sizeClass) {
+            const patId = cardBackColor === 'red' ? 'bicycle-weave-red' : 'bicycle-weave-blue';
+            const strokeCol = cardBackColor === 'red' ? '#991b1b' : '#1e3a8a';
+            const accentCol = cardBackColor === 'red' ? '#fecaca' : '#bfdbfe';
+            return `
+                <div class="${sizeClass} poker-card rounded-md sm:rounded-lg bg-white p-[2px] shadow-md select-none overflow-hidden shrink-0">
+                    <svg viewBox="0 0 60 88" class="w-full h-full rounded-[3px] block">
+                        <rect x="1" y="1" width="58" height="86" rx="4" fill="url(#${patId})" stroke="${strokeCol}" stroke-width="1.5"/>
+                        <rect x="4" y="4" width="52" height="80" rx="2.5" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.85"/>
+                        <circle cx="8" cy="8" r="2" fill="${accentCol}"/>
+                        <circle cx="52" cy="8" r="2" fill="${accentCol}"/>
+                        <circle cx="8" cy="80" r="2" fill="${accentCol}"/>
+                        <circle cx="52" cy="80" r="2" fill="${accentCol}"/>
+                        <g transform="translate(30, 24)">
+                            <circle r="12.5" fill="${strokeCol}" stroke="#ffffff" stroke-width="1.1"/>
+                            <circle r="9.5" fill="none" stroke="${accentCol}" stroke-width="0.8" stroke-dasharray="2,1.5"/>
+                            <path d="M0 -8 L2.3 -2.3 L8 0 L2.3 2.3 L0 8 L-2.3 2.3 L-8 0 L-2.3 -2.3 Z" fill="#ffffff" fill-opacity="0.9"/>
+                            <circle r="2.8" fill="${strokeCol}" stroke="#ffffff" stroke-width="0.8"/>
+                        </g>
+                        <path d="M12 44 L48 44" stroke="#ffffff" stroke-width="0.9" stroke-opacity="0.8"/>
+                        <polygon points="30,40.5 34,44 30,47.5 26,44" fill="#ffffff"/>
+                        <g transform="translate(30, 64)">
+                            <circle r="12.5" fill="${strokeCol}" stroke="#ffffff" stroke-width="1.1"/>
+                            <circle r="9.5" fill="none" stroke="${accentCol}" stroke-width="0.8" stroke-dasharray="2,1.5"/>
+                            <path d="M0 -8 L2.3 -2.3 L8 0 L2.3 2.3 L0 8 L-2.3 2.3 L-8 0 L-2.3 -2.3 Z" fill="#ffffff" fill-opacity="0.9"/>
+                            <circle r="2.8" fill="${strokeCol}" stroke="#ffffff" stroke-width="0.8"/>
+                        </g>
+                    </svg>
+                </div>
+            `;
+        }
+
+        function renderCardHTML(card, faceUp = true, role = 'board') {
+            const sizeMap = {
+                hero: { box: 'card-hero', rank: 'text-sm sm:text-lg', center: 'text-xl sm:text-2xl', corner: 'text-[10px] sm:text-xs' },
+                board: { box: 'card-board', rank: 'text-xs sm:text-base', center: 'text-lg sm:text-2xl', corner: 'text-[9px] sm:text-xs' },
+                ai: { box: 'card-ai', rank: 'text-[11px] sm:text-sm', center: 'text-sm sm:text-lg', corner: 'text-[8px] sm:text-[10px]' }
+            };
+            const st = sizeMap[role] || sizeMap.board;
+
+            if (!card) return `<div class="${st.box} rounded-md sm:rounded-lg border border-dashed border-white/20 bg-slate-950/25 shrink-0"></div>`;
+            if (!faceUp) return renderBicycleBackHTML(st.box);
+            const col = SUIT_COLOR[card.suit], sym = SUIT_SYM[card.suit];
+            return `
+                <div class="${st.box} poker-card animate-deal rounded-md sm:rounded-lg bg-white border border-slate-200 flex flex-col justify-between p-1 font-black ${col} shrink-0">
+                    <div class="leading-none text-left mono tracking-tighter ${st.rank}">${card.rank}<span class="${st.corner}">${sym}</span></div>
+                    <div class="text-center ${st.center} leading-none">${sym}</div>
+                    <div class="leading-none text-right mono ${st.corner} opacity-75">${card.rank}</div>
+                </div>
+            `;
+        }
+
+        function getSeatActionStyle(p) {
+            const isLatestAggressor = (state.lastAggressorIdx === p.id && state.currentBet > 0 && !p.folded);
+            if (p.folded || p.actionType === 'fold') {
+                return { barCls: 'bg-slate-900/80 text-slate-500 border-t border-slate-800', boxBorder: 'border-slate-800', text: 'Fold', badge: '' };
+            }
+            if (p.actionType === 'allin') {
+                return { barCls: 'bg-gradient-to-r from-amber-600 to-rose-600 text-white font-black border-t border-amber-300', boxBorder: 'border-amber-400 seat-aggressor', text: p.actionText || `All-in ${fmtBB(p.bet)}`, badge: '🔥' };
+            }
+            if (p.actionType === '3bet' || p.actionType === 'raise') {
+                return {
+                    barCls: isLatestAggressor
+                        ? 'bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 text-white font-black border-t border-rose-300'
+                        : 'bg-rose-950/90 text-rose-200 font-bold border-t border-rose-500/50',
+                    boxBorder: isLatestAggressor ? 'border-rose-400 seat-aggressor' : 'border-rose-500/60',
+                    text: p.actionText,
+                    badge: isLatestAggressor ? '🔥' : ''
+                };
+            }
+            if (p.actionType === 'call') {
+                return { barCls: 'bg-emerald-600/90 text-white font-black border-t border-emerald-400', boxBorder: 'border-emerald-400/80', text: p.actionText, badge: '' };
+            }
+            if (p.actionType === 'check') {
+                return { barCls: 'bg-sky-700/80 text-sky-100 font-bold border-t border-sky-400/60', boxBorder: 'border-sky-500/60', text: 'Check', badge: '' };
+            }
+            if (p.actionType === 'blind') {
+                return { barCls: 'bg-indigo-950/90 text-indigo-200 font-bold border-t border-indigo-700/60', boxBorder: 'border-slate-700', text: p.actionText, badge: '' };
+            }
+            return { barCls: 'bg-slate-900/90 text-slate-400 border-t border-slate-800', boxBorder: 'border-slate-700', text: '待機中', badge: '' };
+        }
+
+        function renderAll() {
+            const streetNames = { preflop: 'プリフロップ', flop: 'フロップ', turn: 'ターン', river: 'リバー', showdown: 'ショーダウン' };
+            document.getElementById('pot-amount').textContent = fmtBB(state.pot);
+            document.getElementById('header-meta-badge').textContent = `#${state.handNum} · ${state.players[0].pos}`;
+
+            const centerLabel = document.getElementById('table-street-label');
+            if (!state.inProgress && state.lastWinnerText) {
+                centerLabel.textContent = state.lastWinnerText;
+                centerLabel.className = 'mt-1 bg-slate-950/90 border border-amber-400/60 text-amber-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide shadow text-center truncate max-w-[250px] sm:max-w-md';
+            } else {
+                centerLabel.textContent = streetNames[state.street] || 'プリフロップ';
+                centerLabel.className = 'mt-1 bg-slate-950/85 border border-emerald-500/35 text-emerald-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide shadow text-center truncate max-w-[250px] sm:max-w-md';
+            }
+
+            const hero = state.players[0];
+            const toCall = roundBB(Math.max(0, state.currentBet - hero.bet));
+
+            const boardEl = document.getElementById('board-container');
+            let boardHTML = '';
+            for (let i = 0; i < 5; i++) {
+                boardHTML += renderCardHTML(state.board[i] || null, true, 'board');
+            }
+            boardEl.innerHTML = boardHTML;
+
+            state.players.forEach((p, idx) => {
+                const seatEl = document.getElementById(`seat-${idx}`);
+                const isTurn = state.inProgress && state.activeIdx === idx;
+                const showCards = (idx === 0) || (state.street === 'showdown' && !p.folded);
+                const isBtn = p.pos === 'BTN';
+                const st = getSeatActionStyle(p);
+                const role = idx === 0 ? 'hero' : 'ai';
+
+                const foldWrapCls = p.folded ? 'seat-folded' : 'opacity-100';
+                const turnBoxCls = isTurn ? 'seat-turn border-emerald-400' : st.boxBorder;
+
+                let posBadgeCls = 'bg-slate-800 text-slate-200 border-slate-600';
+                if (p.pos === 'BTN') posBadgeCls = 'bg-amber-400 text-slate-950 border-amber-300';
+                else if (p.pos === 'SB' || p.pos === 'BB') posBadgeCls = 'bg-indigo-600 text-white border-indigo-400';
+
+                const panelWidth = idx === 0 ? 'w-[116px] sm:w-[144px]' : 'w-[92px] sm:w-[128px]';
+                const sdBadge = (state.street === 'showdown' && !p.folded && p.showdownHand)
+                    ? `<div class="mt-0.5 bg-amber-400 text-slate-950 font-black text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full shadow">${p.showdownHand.nameJa}</div>`
+                    : '';
+
+                seatEl.innerHTML = `
+                    <div class="flex flex-col items-center transition-all duration-200 ${foldWrapCls}">
+                        <div class="flex items-center justify-center gap-1 mb-0.5">
+                            ${renderCardHTML(p.cards[0], showCards, role)}
+                            ${renderCardHTML(p.cards[1], showCards, role)}
+                        </div>
+                        <div class="bg-slate-950/95 border-2 ${turnBoxCls} rounded-lg sm:rounded-xl ${panelWidth} shadow-xl overflow-hidden relative">
+                            ${isBtn ? `<span class="absolute top-0.5 right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-amber-400 text-slate-950 font-black text-[8px] sm:text-[9px] flex items-center justify-center shadow">D</span>` : ''}
+                            <div class="px-1.5 pt-0.5 pb-0.5">
+                                <div class="flex items-center gap-1 text-[9px] sm:text-[11px] font-bold pr-3">
+                                    <span class="px-1 rounded border text-[8px] sm:text-[10px] font-black mono ${posBadgeCls}">${p.pos}</span>
+                                    <span class="truncate text-slate-200">${p.name}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                                    <span class="text-[9px] text-slate-400 hidden sm:inline">Stack</span>
+                                    <span class="text-amber-400 font-black mono ml-auto">${fmtBB(p.stack)}</span>
+                                </div>
+                            </div>
+                            <div class="px-1 py-0.5 text-center text-[9px] sm:text-xs mono tracking-tight flex items-center justify-center gap-0.5 ${st.barCls}">
+                                <span class="truncate">${st.text}</span>
+                                ${st.badge ? `<span class="text-[8px] font-sans">${st.badge}</span>` : ''}
+                            </div>
+                        </div>
+                        ${sdBadge}
+                    </div>
+                `;
+            });
+
+            const isHeroTurn = state.inProgress && state.activeIdx === 0;
+            const actGrid = document.getElementById('action-buttons-grid');
+            const sizeBar = document.getElementById('bet-size-bar');
+            const nextBar = document.getElementById('next-hand-bar');
+
+            if (!state.inProgress) {
+                actGrid.classList.add('hidden');
+                sizeBar.classList.add('hidden');
+                nextBar.classList.remove('hidden');
+            } else {
+                actGrid.classList.remove('hidden');
+                sizeBar.classList.remove('hidden');
+                nextBar.classList.add('hidden');
+
+                actGrid.className = `grid grid-cols-3 gap-2 ${isHeroTurn ? '' : 'opacity-40 pointer-events-none'}`;
+                sizeBar.className = `flex items-center justify-between gap-1.5 bg-slate-950/80 px-1.5 sm:px-2.5 py-1.5 rounded-xl border border-slate-800/90 ${isHeroTurn ? '' : 'opacity-40 pointer-events-none'}`;
+
+                renderBetPresetButtons();
+
+                document.getElementById('btn-call-title').textContent = toCall <= 0 ? 'チェック' : 'コール';
+                document.getElementById('btn-call-sub').textContent = toCall <= 0
+                    ? 'Check (0BB)'
+                    : `Call ${fmtBB(Math.min(hero.stack, toCall))}`;
+
+                const inputEl = document.getElementById('bet-input');
+                const betVal = parseFloat(inputEl ? inputEl.value : state.minRaiseTo) || state.minRaiseTo;
+                const isPostUnbet = (state.street !== 'preflop' && state.currentBet <= 0);
+                document.getElementById('btn-raise-title').textContent = isPostUnbet ? 'ベット' : 'レイズ';
+                document.getElementById('btn-raise-sub').textContent = `${isPostUnbet ? 'Bet' : 'Raise'} ${fmtBB(betVal)}`;
+            }
+
+            const gto = getCurrentHeroGTO();
+            document.getElementById('gto-hand-code').textContent = gto.handCode;
+            document.getElementById('gto-equity').textContent = `${gto.equity}%`;
+            document.getElementById('gto-pot-odds').textContent = `${gto.potOdds}%`;
+            document.getElementById('gto-spot-label').textContent = gto.spotLabel;
+            document.getElementById('gto-board-texture').textContent = gto.boardTexture;
+            document.getElementById('gto-freq-raise').textContent = `${gto.raise}%`;
+            document.getElementById('gto-freq-call').textContent = `${gto.call}%`;
+            document.getElementById('gto-freq-fold').textContent = `${gto.fold}%`;
+            document.getElementById('gto-bar-raise').style.width = `${gto.raise}%`;
+            document.getElementById('gto-bar-call').style.width = `${gto.call}%`;
+            document.getElementById('gto-bar-fold').style.width = `${gto.fold}%`;
+            document.getElementById('gto-explanation').textContent = gto.reason;
+        }
+
+        // =========================================================================
+        // 9. ベットサイズプリセット＆フリー数値入力操作
+        // =========================================================================
+        function renderBetPresetButtons() {
+            const container = document.getElementById('bet-preset-buttons');
+            if (!container) return;
+            const btnBase = 'bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-[10px] sm:text-xs px-2 py-1 rounded-lg border border-slate-700 font-bold transition shrink-0';
+            const potBase = 'bg-indigo-950/80 hover:bg-indigo-900 active:scale-95 text-indigo-200 text-[10px] sm:text-xs px-2 py-1 rounded-lg border border-indigo-500/40 font-bold transition shrink-0';
+            const allinBase = 'bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 text-[10px] sm:text-xs px-2 py-1 rounded-lg border border-amber-500/40 font-black transition shrink-0';
+
+            if (state.street === 'preflop') {
+                container.innerHTML = `
+                    <button type="button" onclick="setBetPreset('min')" class="${btnBase}">最小</button>
+                    <button type="button" onclick="setBetPreset('bb_2.5')" class="${btnBase}">2.5BB</button>
+                    <button type="button" onclick="setBetPreset('bb_3')" class="${btnBase}">3BB</button>
+                    <button type="button" onclick="setBetPreset('3x')" class="${btnBase}">3x</button>
+                    <button type="button" onclick="setBetPreset(1.00)" class="${potBase}">Pot</button>
+                    <button type="button" onclick="setBetPreset('allin')" class="${allinBase}">All-in</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button type="button" onclick="setBetPreset('min')" class="${btnBase}">最小</button>
+                    <button type="button" onclick="setBetPreset(0.33)" class="${btnBase}">33%</button>
+                    <button type="button" onclick="setBetPreset(0.50)" class="${btnBase}">50%</button>
+                    <button type="button" onclick="setBetPreset(0.75)" class="${btnBase}">75%</button>
+                    <button type="button" onclick="setBetPreset(1.00)" class="${potBase}">100%</button>
+                    <button type="button" onclick="setBetPreset('allin')" class="${allinBase}">All-in</button>
+                `;
+            }
+        }
+
+        function updateSliderBounds() {
+            const hero = state.players[0];
+            const maxBet = roundBB(hero.bet + hero.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+            const input = document.getElementById('bet-input');
+            if (!input) return;
+            input.min = minBet;
+            input.max = Math.max(minBet, maxBet);
+            input.step = 0.5;
+            const def = (state.street === 'preflop' && state.raiseCountThisStreet === 1)
+                ? Math.min(maxBet, hero.pos === 'SB' ? 3.0 : 2.5)
+                : (state.street !== 'preflop' && state.currentBet <= 0 ? Math.min(maxBet, Math.max(1.0, roundBB(state.pot * 0.33))) : minBet);
+            input.value = def;
+            onBetInputChange(def);
+        }
+
+        function onBetInputChange(val) {
+            const hero = state.players[0];
+            const maxBet = roundBB(hero.bet + hero.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+            const parsed = parseFloat(val);
+            if (isNaN(parsed)) return;
+            const clamped = roundBB(Math.max(minBet, Math.min(maxBet, parsed)));
+            const isPostUnbet = (state.street !== 'preflop' && state.currentBet <= 0);
+            const sub = document.getElementById('btn-raise-sub');
+            if (sub) sub.textContent = `${isPostUnbet ? 'Bet' : 'Raise'} ${fmtBB(clamped)}`;
+        }
+
+        function onBetInputBlur() {
+            const hero = state.players[0];
+            const maxBet = roundBB(hero.bet + hero.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+            const input = document.getElementById('bet-input');
+            if (!input) return;
+            const parsed = parseFloat(input.value);
+            const clamped = isNaN(parsed) ? minBet : roundBB(Math.max(minBet, Math.min(maxBet, parsed)));
+            input.value = clamped;
+            onBetInputChange(clamped);
+        }
+
+        function stepBetAmount(delta) {
+            const hero = state.players[0];
+            const maxBet = roundBB(hero.bet + hero.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+            const input = document.getElementById('bet-input');
+            if (!input) return;
+            const cur = parseFloat(input.value) || minBet;
+            const next = roundBB(Math.max(minBet, Math.min(maxBet, cur + delta)));
+            input.value = next;
+            onBetInputChange(next);
+        }
+
+        function setBetPreset(preset) {
+            const hero = state.players[0];
+            const maxBet = roundBB(hero.bet + hero.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+            let target = minBet;
+            if (preset === 'min') target = minBet;
+            else if (preset === 'bb_2.5') target = 2.5;
+            else if (preset === 'bb_3') target = 3.0;
+            else if (preset === '3x') target = roundBB(Math.max(minBet, state.currentBet * 3.0));
+            else if (preset === 'allin') target = maxBet;
+            else if (typeof preset === 'number') {
+                const toCall = Math.max(0, state.currentBet - hero.bet);
+                target = roundBB(state.currentBet + (state.pot + toCall) * preset);
+            }
+            target = roundBB(Math.max(minBet, Math.min(maxBet, target)));
+            const input = document.getElementById('bet-input');
+            if (input) input.value = target;
+            onBetInputChange(target);
+        }
+
+        // =========================================================================
+        // 10. 3種類の13x13 GTOプリフロップレンジ表モーダル
+        // =========================================================================
+        let chartState = { scenario: 'rfi', heroPos: 'BTN', villainPos: 'CO' };
+
+        function openRangeModal(autoSync = false) {
+            if (autoSync) syncRangeChartToTable();
+            else renderRangeChart();
+            document.getElementById('range-modal').classList.remove('hidden');
+        }
+        function closeRangeModal() { document.getElementById('range-modal').classList.add('hidden'); }
+
+        function syncRangeChartToTable() {
+            const gto = getCurrentHeroGTO();
+            chartState.scenario = gto.scenario;
+            chartState.heroPos = gto.heroPos;
+            chartState.villainPos = gto.villainPos;
+            validateChartPositions();
+            renderRangeChart();
+        }
+        function selectRangeScenario(sc) {
+            chartState.scenario = sc;
+            validateChartPositions();
+            renderRangeChart();
+        }
+        function validateChartPositions() {
+            const order = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+            if (chartState.scenario === 'rfi' && chartState.heroPos === 'BB') chartState.heroPos = 'BTN';
+            if (chartState.scenario === 'vs_open') {
+                if (chartState.heroPos === 'UTG') chartState.heroPos = 'BB';
+                const h = order.indexOf(chartState.heroPos), v = order.indexOf(chartState.villainPos);
+                if (v < 0 || v >= h) chartState.villainPos = order[Math.max(0, h - 1)];
+            }
+            if (chartState.scenario === 'vs_3bet') {
+                if (chartState.heroPos === 'BB') chartState.heroPos = 'CO';
+                const h = order.indexOf(chartState.heroPos), v = order.indexOf(chartState.villainPos);
+                if (v <= h) chartState.villainPos = order[Math.min(5, h + 1)];
+            }
+        }
+
+        function renderRangeChart() {
+            ['rfi', 'vs_open', 'vs_3bet'].forEach(sc => {
+                document.getElementById(`tab-${sc}`).className = chartState.scenario === sc
+                    ? 'flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition bg-emerald-600 text-white shadow'
+                    : 'flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition bg-slate-800 text-slate-300 hover:bg-slate-700';
+            });
+
+            const order = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+            const validHero = chartState.scenario === 'rfi'
+                ? ['UTG', 'MP', 'CO', 'BTN', 'SB']
+                : (chartState.scenario === 'vs_open' ? ['MP', 'CO', 'BTN', 'SB', 'BB'] : ['UTG', 'MP', 'CO', 'BTN', 'SB']);
+
+            document.getElementById('range-hero-pos-btns').innerHTML = validHero.map(pos => {
+                const act = chartState.heroPos === pos;
+                return `<button onclick="chartState.heroPos='${pos}'; validateChartPositions(); renderRangeChart();" class="px-2.5 py-1 rounded text-xs font-black mono ${act ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">${pos}</button>`;
+            }).join('');
+
+            const vWrap = document.getElementById('range-villain-pos-wrap');
+            if (chartState.scenario === 'rfi') {
+                vWrap.classList.add('hidden');
+                document.getElementById('range-current-title').textContent = `${chartState.heroPos} オープン (RFI)`;
+                document.getElementById('legend-raise-label').textContent = 'Raise 2.5BB';
+            } else {
+                vWrap.classList.remove('hidden');
+                const hIdx = order.indexOf(chartState.heroPos);
+                const validV = chartState.scenario === 'vs_open' ? order.slice(0, hIdx) : order.slice(hIdx + 1);
+                document.getElementById('range-villain-pos-btns').innerHTML = validV.map(vPos => {
+                    const act = chartState.villainPos === vPos;
+                    return `<button onclick="chartState.villainPos='${vPos}'; renderRangeChart();" class="px-2.5 py-1 rounded text-xs font-black mono ${act ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-300'}">vs ${vPos}</button>`;
+                }).join('');
+                document.getElementById('range-current-title').textContent = chartState.scenario === 'vs_open'
+                    ? `${chartState.heroPos} vs ${chartState.villainPos} Open`
+                    : `${chartState.heroPos} vs ${chartState.villainPos} 3Bet`;
+                document.getElementById('legend-raise-label').textContent = chartState.scenario === 'vs_open' ? '3Bet' : '4Bet';
+            }
+
+            const heroCode = getHandCode(state.players[0].cards);
+            let html = '', totalC = 0, raiseC = 0, callC = 0;
+
+            for (let i = 0; i < 13; i++) {
+                for (let j = 0; j < 13; j++) {
+                    const r1 = RANKS[i], r2 = RANKS[j];
+                    const code = i === j ? (r1 + r2) : (i < j ? `${r1}${r2}s` : `${r2}${r1}o`);
+                    const combos = i === j ? 6 : (i < j ? 4 : 12);
+                    const freq = getGtoPreflopFreq(chartState.scenario, chartState.heroPos, chartState.villainPos, code);
+                    totalC += combos;
+                    raiseC += combos * (freq.raise / 100);
+                    callC += combos * (freq.call / 100);
+
+                    const rStop = freq.raise, cStop = freq.raise + freq.call;
+                    const bg = `linear-gradient(to right, #f43f5e 0%, #f43f5e ${rStop}%, #10b981 ${rStop}%, #10b981 ${cStop}%, #1e293b ${cStop}%, #1e293b 100%)`;
+                    const ring = code === heroCode ? 'ring-2 ring-yellow-300 z-10 scale-105' : 'border border-slate-800/80';
+
+                    html += `<div onmouseenter="inspectRangeCell('${code}',${combos},${freq.raise},${freq.call},${freq.fold})" onclick="inspectRangeCell('${code}',${combos},${freq.raise},${freq.call},${freq.fold})" style="background:${bg}" class="h-6 sm:h-8 rounded flex items-center justify-center text-[9px] sm:text-[11px] font-black mono text-white cursor-pointer ${ring}"><span class="drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">${code}</span></div>`;
+                }
+            }
+            document.getElementById('range-matrix').innerHTML = html;
+
+            const rPct = ((raiseC / totalC) * 100).toFixed(1);
+            const cPct = ((callC / totalC) * 100).toFixed(1);
+            const fPct = Math.max(0, 100 - parseFloat(rPct) - parseFloat(cPct)).toFixed(1);
+            document.getElementById('summary-raise-pct').textContent = `${rPct}%`;
+            document.getElementById('summary-call-pct').textContent = `${cPct}%`;
+            document.getElementById('summary-fold-pct').textContent = `${fPct}%`;
+
+            const hf = getGtoPreflopFreq(chartState.scenario, chartState.heroPos, chartState.villainPos, heroCode);
+            inspectRangeCell(heroCode, heroCode.length === 2 ? 6 : (heroCode.endsWith('s') ? 4 : 12), hf.raise, hf.call, hf.fold);
+        }
+
+        function inspectRangeCell(code, combos, r, c, f) {
+            document.getElementById('cell-detail-hand').textContent = `${code} (${combos}コンボ)`;
+            document.getElementById('cell-detail-bars').innerHTML = `
+                <div class="flex justify-between"><span>Raise / 3Bet / 4Bet:</span><span class="font-bold text-rose-400 mono">${r}%</span></div>
+                <div class="flex justify-between"><span>Call:</span><span class="font-bold text-emerald-400 mono">${c}%</span></div>
+                <div class="flex justify-between"><span>Fold:</span><span class="font-bold text-slate-400 mono">${f}%</span></div>
+            `;
+        }
+
+        // =========================================================================
+        // 11. 復習モーダル(ミスフィルター付き)・戦績・HTML保存・キーボード操作
+        // =========================================================================
+        function openReviewModal(onlyMistakes = false) {
+            reviewMistakeOnly = onlyMistakes;
+            renderReviewList();
+            document.getElementById('review-modal').classList.remove('hidden');
+        }
+        function closeReviewModal() { document.getElementById('review-modal').classList.add('hidden'); }
+
+        function setReviewFilter(onlyMistakes) {
+            reviewMistakeOnly = onlyMistakes;
+            renderReviewList();
+        }
+
+        function renderReviewList() {
+            const btnAll = document.getElementById('filter-all-btn');
+            const btnMis = document.getElementById('filter-mistake-btn');
+            btnAll.className = !reviewMistakeOnly
+                ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white'
+                : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300';
+            btnMis.className = reviewMistakeOnly
+                ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white'
+                : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300';
+
+            const list = reviewMistakeOnly ? state.reviewLogs.filter(x => x.isMistake) : state.reviewLogs;
+            const el = document.getElementById('review-list');
+            el.innerHTML = list.length === 0
+                ? `<div class="text-slate-400 text-center py-6">${reviewMistakeOnly ? '現在GTOミスプレイの記録はありません。素晴らしいプレイです！' : 'まだプレイ履歴がありません。'}</div>`
+                : list.map(item => `
+                    <div class="bg-slate-950 border ${item.isMistake ? 'border-rose-500/60' : 'border-slate-800'} rounded-xl p-2.5 flex flex-col gap-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <span class="text-amber-400 font-bold mono">#${item.handNum} [${item.street.toUpperCase()}]</span>
+                                <span class="text-slate-200 font-bold ml-1">${item.pos} (${item.handCode})</span>
+                                <span class="text-slate-400 ml-1">自分: <strong class="text-white">${item.chosen}</strong> vs 推奨: <strong class="text-emerald-300">${item.recText}</strong></span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-bold ${item.isMistake ? 'text-rose-400' : 'text-emerald-300'}">${item.grade}</span>
+                                <span class="text-[11px] text-amber-400 mono ml-2">-${item.evLoss.toFixed(2)}BB</span>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-400">${item.reason} <span class="mono text-slate-500">[${item.freqs}]</span></div>
+                    </div>
+                `).join('');
+        }
+
+        function openStatsModal() {
+            const s = state.stats;
+            document.getElementById('stat-hands').textContent = `${s.hands}`;
+            document.getElementById('stat-profit').textContent = `${s.profitBB >= 0 ? '+' : ''}${s.profitBB.toFixed(1)} BB`;
+            document.getElementById('stat-gto-acc').textContent = `${s.gtoChecks > 0 ? Math.min(100, Math.round((s.gtoOptimal / s.gtoChecks) * 100)) : 100}%`;
+            document.getElementById('stat-vpip').textContent = `${s.hands > 0 ? ((s.vpipCount / s.hands) * 100).toFixed(1) : '0.0'}%`;
+            document.getElementById('stat-pfr').textContent = `${s.hands > 0 ? ((s.pfrCount / s.hands) * 100).toFixed(1) : '0.0'}%`;
+            document.getElementById('stat-evloss').textContent = `-${s.hands > 0 ? (s.totalEvLoss / s.hands).toFixed(2) : '0.00'} BB`;
+            document.getElementById('stats-modal').classList.remove('hidden');
+        }
+        function closeStatsModal() { document.getElementById('stats-modal').classList.add('hidden'); }
+        function resetAllStats() {
+            state.stats = { hands: 0, wins: 0, profitBB: 0, vpipCount: 0, pfrCount: 0, gtoChecks: 0, gtoOptimal: 0, totalEvLoss: 0 };
+            state.reviewLogs = [];
+            updateMistakeBadge();
+            saveStats(); openStatsModal();
+        }
+
+        function downloadStandaloneHTML() {
+            const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'gto-poker-trainer-jp.html';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            const k = e.key.toLowerCase();
+            if (state.inProgress && state.activeIdx === 0) {
+                if (k === 'f') heroAction('fold');
+                else if (k === 'c') heroAction('call');
+                else if (k === 'r') heroAction('raise');
+                else if (k === '1') setBetPreset('min');
+                else if (k === '2') setBetPreset(0.33);
+                else if (k === '3') setBetPreset(0.50);
+                else if (k === '4') setBetPreset(0.75);
+                else if (k === '5') setBetPreset(1.00);
+            } else if (!state.inProgress && (k === ' ' || k === 'enter')) {
+                e.preventDefault(); startNewHand();
+            }
+        });
+
+        window.onload = () => {
+            assignPositions();
+            startNewHand();
+        };
+    </script>
 </body>
 </html>
