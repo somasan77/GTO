@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ten-Four GTO Poker - 完全日本語オフライン版</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#111827">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GTO Poker">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
@@ -2056,10 +2063,16 @@
             }
         });
 
-        window.onload = () => {
+                window.onload = () => {
             assignPositions();
             startNewHand();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js').catch(err => {
+                    console.log('SW registration failed:', err);
+                });
+            }
         };
     </script>
 </body>
 </html>
+
