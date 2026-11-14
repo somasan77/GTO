@@ -4,13 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ten-Four GTO Poker - 完全日本語オフライン版</title>
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#111827">
-    <link rel="apple-touch-icon" href="./icon.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GTO Poker">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
@@ -167,9 +160,10 @@
                         <button onclick="hideMistakeBanner()" class="text-slate-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded bg-slate-800">✕</button>
                     </div>
                     <p id="banner-reason" class="text-[11px] text-slate-300 mt-1 leading-snug"></p>
-                    <div class="flex items-center gap-2 mt-2">
+                    <div class="flex items-center gap-2 mt-2 flex-wrap">
                         <button onclick="openBannerRange()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg shadow transition">📊 今のスポットのレンジ表</button>
-                        <button onclick="hideMistakeBanner(); openReviewModal(true);" class="bg-rose-700 hover:bg-rose-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg shadow transition">📝 ミス復習モーダル</button>
+                        <button onclick="hideMistakeBanner(); openReviewModal(true, 'list');" class="bg-rose-700 hover:bg-rose-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-lg shadow transition">📝 ミス復習リスト</button>
+                        <button onclick="hideMistakeBanner(); openReviewModal(true, 'heatmap');" class="bg-amber-600 hover:bg-amber-500 text-slate-950 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg shadow transition">🔥 弱点ヒートマップ</button>
                     </div>
                 </div>
 
@@ -202,9 +196,7 @@
                 <!-- ベットサイズ選択バー (実用プリセット + 直接BBフリー入力 & ±ボタン) -->
                 <div id="bet-size-bar" class="flex items-center justify-between gap-1.5 bg-slate-950/80 px-1.5 sm:px-2.5 py-1.5 rounded-xl border border-slate-800/90">
                     <!-- 左側: ストリート別動的プリセットボタン群 -->
-                    <div id="bet-preset-buttons" class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
-                        <!-- JSでプリフロップ用(最小/2.5BB/3BB/3x/Pot/All-in) と ポストフロップ用(最小/33%/50%/75%/100%/All-in) を自動切替 -->
-                    </div>
+                    <div id="bet-preset-buttons" class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0"></div>
 
                     <!-- 右側: - / フリー数値入力(BB) / + -->
                     <div class="flex items-center gap-1 shrink-0 ml-auto bg-slate-900 border border-slate-700 rounded-xl p-0.5">
@@ -326,7 +318,7 @@
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
                 <h2 class="text-base font-black text-white flex items-center gap-1.5"><span>⚙️</span><span>設定・オプション・データ</span></h2>
-                <button onclick="closeSettingsModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+                <button onclick="closeSettingsModal()" class="shrink-0 w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
             </div>
 
             <div class="space-y-2.5 text-xs">
@@ -366,8 +358,8 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
-                    <button onclick="closeSettingsModal(); openReviewModal(false);" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-xl font-bold border border-slate-700 transition text-center">
-                        📝 復習・採点履歴
+                    <button onclick="closeSettingsModal(); openReviewModal(false, 'heatmap');" class="bg-rose-950/60 hover:bg-rose-900/70 text-rose-200 py-2.5 px-3 rounded-xl font-bold border border-rose-500/40 transition text-center">
+                        🔥 弱点ヒートマップ
                     </button>
                     <button onclick="closeSettingsModal(); openStatsModal();" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-xl font-bold border border-slate-700 transition text-center">
                         📈 通算戦績・スタッツ
@@ -391,13 +383,13 @@
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
                 <h2 class="text-sm font-black text-white flex items-center gap-1.5"><span>🧠</span><span>GTO リアルタイム解析</span></h2>
-                <button onclick="closeCoachModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+                <button onclick="closeCoachModal()" class="shrink-0 w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
             </div>
             <div id="mobile-coach-body" class="space-y-2.5 text-xs"></div>
         </div>
     </div>
 
-    <!-- モーダル3: 📊 3種類の13x13 GTOプリフロップレンジ表 (右上✕固定配置) -->
+    <!-- モーダル3: 📊 3種類の13x13 GTOプリフロップレンジ表 (右上✕固定配置 + 復習からの戻り対応) -->
     <div id="range-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto p-3 sm:p-4 shadow-2xl flex flex-col gap-2.5">
             <!-- ヘッダー: 左にタイトル、右上に常に閉じるボタン -->
@@ -406,12 +398,14 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <h2 class="text-sm sm:text-lg font-black text-white">📊 6-Max GTOレンジ表</h2>
                         <span id="range-current-title" class="text-[11px] sm:text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-bold">BTN オープン</span>
+                        <span id="range-review-context-badge" class="hidden text-[10px] sm:text-xs bg-amber-500/20 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded font-bold">📝 復習スポット同期中</span>
                     </div>
                     <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">①オープン(RFI) / ②対オープン(3Bet/Call) / ③対3ベット(4Bet/Call)</p>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
+                    <button id="btn-back-to-review" onclick="returnToReviewFromRange()" class="hidden bg-rose-600 hover:bg-rose-500 text-white text-[11px] sm:text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition">← 復習へ戻る</button>
                     <button onclick="syncRangeChartToTable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition">🎯 現況同期</button>
-                    <button onclick="closeRangeModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+                    <button onclick="closeRangeModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
                 </div>
             </div>
 
@@ -453,7 +447,7 @@
                         </div>
                         <div class="flex items-center gap-1.5 pt-1 text-[11px] text-amber-300">
                             <span class="w-3 h-3 rounded border-2 border-yellow-400 inline-block"></span>
-                            <span>黄色枠 ＝ あなたの現在の手札</span>
+                            <span id="range-highlight-caption">黄色枠 ＝ 対象ハンド</span>
                         </div>
                     </div>
                     <div class="border-t border-slate-800 pt-2.5 mt-1">
@@ -466,22 +460,111 @@
         </div>
     </div>
 
-    <!-- モーダル4: 📝 ミス復習・採点履歴モーダル (ミスのみフィルター付き) -->
-    <div id="review-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[86vh] flex flex-col p-4 shadow-2xl">
-            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5 mb-2.5">
+    <!-- モーダル4: 📝 ミス復習＆弱点ヒートマップモーダル -->
+    <div id="review-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col p-3 sm:p-4 shadow-2xl gap-2.5 overflow-hidden">
+            <!-- ヘッダー: タイトル + 右上固定✕ボタン -->
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2 shrink-0">
                 <div>
-                    <h2 class="text-sm sm:text-base font-black text-white flex items-center gap-2">
-                        <span>📝 GTOプレイ復習＆採点履歴</span>
+                    <h2 class="text-sm sm:text-lg font-black text-white flex items-center gap-2">
+                        <span>📝 GTOプレイ復習 ＆ 弱点レンジ投影</span>
                     </h2>
-                    <div class="flex items-center gap-1.5 mt-1.5">
+                    <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">履歴アイテムをタップするとその場のGTOレンジ表を表示。ヒートマップで自分のミス傾向を一目で把握できます。</p>
+                </div>
+                <button onclick="closeReviewModal()" class="shrink-0 w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+            </div>
+
+            <!-- メインタブ切替: 📋 プレイ履歴リスト / 🔥 ミスヒートマップ (弱点投影レンジ表) -->
+            <div class="flex gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 shrink-0">
+                <button id="review-tab-list" onclick="switchReviewTab('list')" class="flex-1 py-2 px-3 rounded-lg text-xs font-black transition bg-emerald-600 text-white shadow flex items-center justify-center gap-1.5">
+                    <span>📋</span><span>プレイ履歴リスト (タップでレンジ表)</span>
+                </button>
+                <button id="review-tab-heatmap" onclick="switchReviewTab('heatmap')" class="flex-1 py-2 px-3 rounded-lg text-xs font-black transition bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center gap-1.5">
+                    <span>🔥</span><span>ミスヒートマップ (弱点投影レンジ表)</span>
+                </button>
+            </div>
+
+            <!-- ビューA: 📋 プレイ履歴リスト -->
+            <div id="review-view-list" class="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
                         <button id="filter-all-btn" onclick="setReviewFilter(false)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300">すべて表示</button>
                         <button id="filter-mistake-btn" onclick="setReviewFilter(true)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white">🚨 ミスのみ表示</button>
                     </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="injectSampleMistakes()" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-500/40 transition" title="ヒートマップ確認用のサンプルミスを追加">＋ サンプルミス追加</button>
+                        <button onclick="clearReviewHistory()" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-200 border border-slate-700 transition">履歴クリア</button>
+                    </div>
                 </div>
-                <button onclick="closeReviewModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+                <div id="review-list" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs"></div>
             </div>
-            <div id="review-list" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs"></div>
+
+            <!-- ビューB: 🔥 ミスヒートマップ (弱点投影レンジ表) -->
+            <div id="review-view-heatmap" class="hidden flex-1 min-h-0 overflow-y-auto flex flex-col gap-2.5 pr-1">
+                <!-- フィルターバー: シナリオ & ポジション -->
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/90 p-2 rounded-xl border border-slate-800 text-xs shrink-0">
+                    <div class="flex flex-wrap items-center gap-1">
+                        <span class="text-[11px] font-bold text-slate-400 mr-1">状況:</span>
+                        <button onclick="setHeatmapScenario('all')" id="hm-sc-all" class="px-2 py-1 rounded text-[11px] font-black bg-rose-600 text-white">すべて</button>
+                        <button onclick="setHeatmapScenario('rfi')" id="hm-sc-rfi" class="px-2 py-1 rounded text-[11px] font-bold bg-slate-800 text-slate-300">① オープン</button>
+                        <button onclick="setHeatmapScenario('vs_open')" id="hm-sc-vs_open" class="px-2 py-1 rounded text-[11px] font-bold bg-slate-800 text-slate-300">② 対オープン</button>
+                        <button onclick="setHeatmapScenario('vs_3bet')" id="hm-sc-vs_3bet" class="px-2 py-1 rounded text-[11px] font-bold bg-slate-800 text-slate-300">③ 対3ベット</button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1">
+                        <span class="text-[11px] font-bold text-slate-400 mr-1">自席:</span>
+                        <div id="hm-pos-btns" class="flex flex-wrap gap-1"></div>
+                    </div>
+                </div>
+
+                <!-- 13x13 ヒートマップマトリクス & 右側弱点分析パネル -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                    <div class="md:col-span-8 bg-slate-950 p-1.5 sm:p-2 rounded-xl border border-slate-800">
+                        <div id="mistake-heatmap-matrix" class="range-grid"></div>
+                        <!-- 強度凡例 -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 mt-2 px-1 text-[10px] text-slate-400">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-900 border border-slate-700 inline-block"></span>0回(ミスなし)</span>
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500/45 border border-amber-400 inline-block"></span>1回(注意)</span>
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-orange-600/80 border border-orange-300 inline-block"></span>2回(警戒)</span>
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-rose-600 border border-yellow-300 inline-block"></span>3回以上(要克服！)</span>
+                            </div>
+                            <button onclick="injectSampleMistakes()" class="text-indigo-300 hover:underline font-bold">＋サンプル投影</button>
+                        </div>
+                    </div>
+
+                    <!-- 右側: 弱点サマリー＆選択ハンドのミス詳細 -->
+                    <div class="md:col-span-4 flex flex-col gap-2.5 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                        <div class="font-black text-rose-300 border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                            <span>🔥 弱点傾向サマリー</span>
+                            <span id="hm-total-mistakes" class="mono text-white bg-rose-600 px-2 py-0.5 rounded-full text-[10px]">0件</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-center">
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">累積EVロス</div>
+                                <div id="hm-total-evloss" class="text-sm font-black text-rose-400 mono mt-0.5">-0.00 BB</div>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">最多ミス状況</div>
+                                <div id="hm-worst-spot" class="text-xs font-black text-amber-300 truncate mt-1">データなし</div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-[11px] font-bold text-slate-400 mb-1">🚨 ワースト3 弱点ハンド</div>
+                            <div id="hm-worst-hands" class="space-y-1"></div>
+                        </div>
+
+                        <div class="border-t border-slate-800 pt-2 mt-0.5">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[11px] text-slate-400">🔍 選択セル詳細: <strong id="hm-detail-hand" class="text-amber-400 mono text-sm">AKo</strong></span>
+                                <button id="hm-jump-range-btn" onclick="openRangeFromHeatmapCell()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow transition">📊 GTOレンジ確認</button>
+                            </div>
+                            <div id="hm-detail-list" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-[11px]"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -490,7 +573,7 @@
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
                 <h2 class="text-base font-black text-white">📈 通算GTO戦績＆スタッツ</h2>
-                <button onclick="closeStatsModal()" class="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
+                <button onclick="closeStatsModal()" class="shrink-0 w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-sm font-black flex items-center justify-center border border-slate-700 transition" title="閉じる">✕</button>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">総ハンド数</div><div id="stat-hands" class="text-base font-black text-white mono mt-0.5">0</div></div>
@@ -522,7 +605,16 @@
         let soundEnabled = true;
         let audioCtx = null;
         let reviewMistakeOnly = false;
+        let reviewActiveTab = 'list'; // 'list' | 'heatmap'
         let lastBannerSpot = null;
+        let cameFromReviewModal = false;
+
+        // ヒートマップ用フィルタ状態
+        let heatmapFilter = {
+            scenario: 'all', // 'all' | 'rfi' | 'vs_open' | 'vs_3bet'
+            heroPos: 'ALL',  // 'ALL' | 'UTG' | 'MP' | 'CO' | 'BTN' | 'SB' | 'BB'
+            selectedHand: 'A9o'
+        };
 
         function roundBB(v) { return Math.round(v * 10) / 10; }
         function fmtBB(v) {
@@ -709,7 +801,7 @@
         }
 
         // =========================================================================
-        // 3. ゲーム状態管理
+        // 3. ゲーム状態管理 ＆ 復習ログ永続化
         // =========================================================================
         let drillMode = 'normal';
         let autoFoldNext = true;
@@ -735,11 +827,17 @@
         };
 
         try {
-            const saved = localStorage.getItem('tenfour_gto_v3_stats');
-            if (saved) state.stats = Object.assign(state.stats, JSON.parse(saved));
+            const savedStats = localStorage.getItem('tenfour_gto_v4_stats');
+            if (savedStats) state.stats = Object.assign(state.stats, JSON.parse(savedStats));
+            const savedLogs = localStorage.getItem('tenfour_gto_v4_review_logs');
+            if (savedLogs) state.reviewLogs = JSON.parse(savedLogs);
         } catch (e) {}
+
         function saveStats() {
-            try { localStorage.setItem('tenfour_gto_v3_stats', JSON.stringify(state.stats)); } catch (e) {}
+            try {
+                localStorage.setItem('tenfour_gto_v4_stats', JSON.stringify(state.stats));
+                localStorage.setItem('tenfour_gto_v4_review_logs', JSON.stringify(state.reviewLogs));
+            } catch (e) {}
         }
 
         function addLog(msg, cls = 'text-slate-300') {
@@ -1303,35 +1401,41 @@
             };
         }
 
+        function getCurrentPreflopSpotMeta() {
+            const hero = state.players[0];
+            let scenario = 'rfi', villainPos = 'CO', spotLabel = `${hero.pos} オープン判断 (RFI)`;
+            if (state.raiseCountThisStreet === 2 && state.firstRaiserIdx !== 0) {
+                scenario = 'vs_open';
+                villainPos = state.firstRaiserIdx >= 0 ? state.players[state.firstRaiserIdx].pos : 'CO';
+                spotLabel = `${hero.pos} vs ${villainPos} Open`;
+            } else if (state.raiseCountThisStreet >= 3) {
+                scenario = 'vs_3bet';
+                villainPos = state.threeBettorIdx >= 0 ? state.players[state.threeBettorIdx].pos : 'BTN';
+                spotLabel = `${hero.pos} vs ${villainPos} 3Bet`;
+            }
+            return { scenario, heroPos: hero.pos, villainPos, spotLabel };
+        }
+
         function getCurrentHeroGTO() {
             const hero = state.players[0];
             const handCode = getHandCode(hero.cards);
             const toCall = roundBB(Math.max(0, state.currentBet - hero.bet));
             const potOdds = toCall > 0 ? Math.round((toCall / (state.pot + toCall)) * 100) : 0;
+            const meta = getCurrentPreflopSpotMeta();
 
             if (state.street === 'preflop') {
-                let scenario = 'rfi', villainPos = 'UTG', spotLabel = `${hero.pos} オープン判断 (RFI)`;
-                if (state.raiseCountThisStreet === 2 && state.firstRaiserIdx !== 0) {
-                    scenario = 'vs_open';
-                    villainPos = state.firstRaiserIdx >= 0 ? state.players[state.firstRaiserIdx].pos : 'CO';
-                    spotLabel = `${hero.pos} vs ${villainPos} Open`;
-                } else if (state.raiseCountThisStreet >= 3) {
-                    scenario = 'vs_3bet';
-                    villainPos = state.threeBettorIdx >= 0 ? state.players[state.threeBettorIdx].pos : 'BTN';
-                    spotLabel = `${hero.pos} vs ${villainPos} 3Bet`;
-                }
-                const freq = getGtoPreflopFreq(scenario, hero.pos, villainPos, handCode);
+                const freq = getGtoPreflopFreq(meta.scenario, meta.heroPos, meta.villainPos, handCode);
                 const eq = Math.min(85, Math.max(32, Math.round((HAND_POWER[handCode] || 50) * 0.78)));
                 let reason = '';
-                if (freq.raise >= 60) reason = `【${spotLabel}】${handCode} はRaise/3Bet主体のコアレンジ (推奨 ${freq.raise}%) です。`;
-                else if (freq.call >= 50) reason = `【${spotLabel}】${handCode} はCallでディフェンスする頻度 (${freq.call}%) が高いハンドです。`;
-                else if (freq.raise + freq.call >= 30) reason = `【${spotLabel}】${handCode} は混合戦略 (Raise ${freq.raise}% / Call ${freq.call}% / Fold ${freq.fold}%) の境界ハンドです。`;
-                else reason = `【${spotLabel}】${handCode} はレンジ外のため Fold (${freq.fold}%) がGTO推奨です。`;
+                if (freq.raise >= 60) reason = `【${meta.spotLabel}】${handCode} はRaise/3Bet主体のコアレンジ (推奨 ${freq.raise}%) です。`;
+                else if (freq.call >= 50) reason = `【${meta.spotLabel}】${handCode} はCallでディフェンスする頻度 (${freq.call}%) が高いハンドです。`;
+                else if (freq.raise + freq.call >= 30) reason = `【${meta.spotLabel}】${handCode} は混合戦略 (Raise ${freq.raise}% / Call ${freq.call}% / Fold ${freq.fold}%) の境界ハンドです。`;
+                else reason = `【${meta.spotLabel}】${handCode} はレンジ外のため Fold (${freq.fold}%) がGTO推奨です。`;
 
-                return { handCode, equity: eq, potOdds, spotLabel, boardTexture: 'プリフロップ (100BB)', raise: freq.raise, call: freq.call, fold: freq.fold, reason, scenario, heroPos: hero.pos, villainPos };
+                return { handCode, equity: eq, potOdds, spotLabel: meta.spotLabel, boardTexture: 'プリフロップ (100BB)', raise: freq.raise, call: freq.call, fold: freq.fold, reason, scenario: meta.scenario, heroPos: meta.heroPos, villainPos: meta.villainPos };
             } else {
                 const post = analyzePostflopGTO(hero);
-                return { handCode, equity: post.equity, potOdds: post.potOdds, spotLabel: `${state.street.toUpperCase()} (${hero.pos})`, boardTexture: post.textureLabel, raise: post.raise, call: post.call, fold: post.fold, reason: post.reason, scenario: 'rfi', heroPos: hero.pos, villainPos: 'BTN' };
+                return { handCode, equity: post.equity, potOdds: post.potOdds, spotLabel: `${state.street.toUpperCase()} (${hero.pos})`, boardTexture: post.textureLabel, raise: post.raise, call: post.call, fold: post.fold, reason: post.reason, scenario: meta.scenario, heroPos: meta.heroPos, villainPos: meta.villainPos };
             }
         }
 
@@ -1365,9 +1469,11 @@
 
         function openBannerRange() {
             if (lastBannerSpot) {
+                cameFromReviewModal = false;
                 chartState.scenario = lastBannerSpot.scenario;
                 chartState.heroPos = lastBannerSpot.heroPos;
                 chartState.villainPos = lastBannerSpot.villainPos;
+                chartState.highlightHand = lastBannerSpot.handCode || null;
                 validateChartPositions();
                 renderRangeChart();
                 document.getElementById('range-modal').classList.remove('hidden');
@@ -1414,12 +1520,12 @@
                 boxCls = 'bg-rose-950/90 border-rose-500 text-rose-200';
                 evLoss = roundBB(Math.max(0.25, (maxFreq - chosenFreq) * (isMajor ? 0.015 : 0.011)));
                 showMistakeBanner(isMajor, actLabel, chosenFreq, recText, evLoss, gto.reason, {
-                    scenario: gto.scenario, heroPos: gto.heroPos, villainPos: gto.villainPos
+                    scenario: gto.scenario, heroPos: gto.heroPos, villainPos: gto.villainPos, handCode: gto.handCode
                 });
+                heatmapFilter.selectedHand = gto.handCode;
             }
 
             state.stats.totalEvLoss = roundBB(state.stats.totalEvLoss + evLoss);
-            saveStats();
 
             const fbBox = document.getElementById('gto-feedback-box');
             fbBox.className = `rounded-xl p-2.5 border text-xs font-bold flex items-center justify-between ${boxCls}`;
@@ -1427,13 +1533,27 @@
             document.getElementById('gto-feedback-ev').textContent = `EVロス: -${evLoss.toFixed(2)} BB`;
             fbBox.classList.remove('hidden');
 
+            // 復習アイテムからレンジ表を完全再現できるようスポット情報(scenario, heroPos, villainPos, spotLabel)を保存
             state.reviewLogs.unshift({
-                handNum: state.handNum, street: state.street, pos: state.players[0].pos,
-                handCode: gto.handCode, chosen: actLabel, recText, grade, evLoss, isMistake,
+                id: Date.now() + Math.random(),
+                handNum: state.handNum,
+                street: state.street,
+                pos: gto.heroPos,
+                heroPos: gto.heroPos,
+                villainPos: gto.villainPos,
+                scenario: gto.scenario,
+                spotLabel: gto.spotLabel,
+                handCode: gto.handCode,
+                chosen: actLabel,
+                recText,
+                grade,
+                evLoss,
+                isMistake,
                 reason: gto.reason,
                 freqs: `R:${gto.raise}% / C:${gto.call}% / F:${gto.fold}%`
             });
-            if (state.reviewLogs.length > 50) state.reviewLogs.pop();
+            if (state.reviewLogs.length > 120) state.reviewLogs.pop();
+            saveStats();
             updateMistakeBadge();
         }
 
@@ -1636,6 +1756,7 @@
             const streetNames = { preflop: 'プリフロップ', flop: 'フロップ', turn: 'ターン', river: 'リバー', showdown: 'ショーダウン' };
             document.getElementById('pot-amount').textContent = fmtBB(state.pot);
             document.getElementById('header-meta-badge').textContent = `#${state.handNum} · ${state.players[0].pos}`;
+            updateMistakeBadge();
 
             const centerLabel = document.getElementById('table-street-label');
             if (!state.inProgress && state.lastWinnerText) {
@@ -1854,30 +1975,42 @@
         }
 
         // =========================================================================
-        // 10. 3種類の13x13 GTOプリフロップレンジ表モーダル
+        // 10. 3種類の13x13 GTOプリフロップレンジ表モーダル (復習スポット同期対応)
         // =========================================================================
-        let chartState = { scenario: 'rfi', heroPos: 'BTN', villainPos: 'CO' };
+        let chartState = { scenario: 'rfi', heroPos: 'BTN', villainPos: 'CO', highlightHand: null };
 
         function openRangeModal(autoSync = false) {
+            cameFromReviewModal = false;
             if (autoSync) syncRangeChartToTable();
             else renderRangeChart();
             document.getElementById('range-modal').classList.remove('hidden');
         }
-        function closeRangeModal() { document.getElementById('range-modal').classList.add('hidden'); }
+        function closeRangeModal() {
+            document.getElementById('range-modal').classList.add('hidden');
+        }
+
+        function returnToReviewFromRange() {
+            document.getElementById('range-modal').classList.add('hidden');
+            document.getElementById('review-modal').classList.remove('hidden');
+        }
 
         function syncRangeChartToTable() {
+            cameFromReviewModal = false;
             const gto = getCurrentHeroGTO();
             chartState.scenario = gto.scenario;
             chartState.heroPos = gto.heroPos;
             chartState.villainPos = gto.villainPos;
+            chartState.highlightHand = gto.handCode;
             validateChartPositions();
             renderRangeChart();
         }
+
         function selectRangeScenario(sc) {
             chartState.scenario = sc;
             validateChartPositions();
             renderRangeChart();
         }
+
         function validateChartPositions() {
             const order = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
             if (chartState.scenario === 'rfi' && chartState.heroPos === 'BB') chartState.heroPos = 'BTN';
@@ -1894,6 +2027,17 @@
         }
 
         function renderRangeChart() {
+            // 復習モーダルからの遷移時は「← 復習へ戻る」ボタンとバッジを表示
+            const backBtn = document.getElementById('btn-back-to-review');
+            const ctxBadge = document.getElementById('range-review-context-badge');
+            if (cameFromReviewModal) {
+                backBtn.classList.remove('hidden');
+                ctxBadge.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+                ctxBadge.classList.add('hidden');
+            }
+
             ['rfi', 'vs_open', 'vs_3bet'].forEach(sc => {
                 document.getElementById(`tab-${sc}`).className = chartState.scenario === sc
                     ? 'flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition bg-emerald-600 text-white shadow'
@@ -1929,7 +2073,11 @@
                 document.getElementById('legend-raise-label').textContent = chartState.scenario === 'vs_open' ? '3Bet' : '4Bet';
             }
 
-            const heroCode = getHandCode(state.players[0].cards);
+            const targetCode = chartState.highlightHand || getHandCode(state.players[0].cards);
+            document.getElementById('range-highlight-caption').textContent = cameFromReviewModal
+                ? `黄色枠 ＝ 復習対象ハンド (${targetCode})`
+                : `黄色枠 ＝ あなたの現在の手札 (${targetCode})`;
+
             let html = '', totalC = 0, raiseC = 0, callC = 0;
 
             for (let i = 0; i < 13; i++) {
@@ -1944,7 +2092,7 @@
 
                     const rStop = freq.raise, cStop = freq.raise + freq.call;
                     const bg = `linear-gradient(to right, #f43f5e 0%, #f43f5e ${rStop}%, #10b981 ${rStop}%, #10b981 ${cStop}%, #1e293b ${cStop}%, #1e293b 100%)`;
-                    const ring = code === heroCode ? 'ring-2 ring-yellow-300 z-10 scale-105' : 'border border-slate-800/80';
+                    const ring = code === targetCode ? 'ring-2 ring-yellow-300 z-10 scale-105 shadow-lg' : 'border border-slate-800/80';
 
                     html += `<div onmouseenter="inspectRangeCell('${code}',${combos},${freq.raise},${freq.call},${freq.fold})" onclick="inspectRangeCell('${code}',${combos},${freq.raise},${freq.call},${freq.fold})" style="background:${bg}" class="h-6 sm:h-8 rounded flex items-center justify-center text-[9px] sm:text-[11px] font-black mono text-white cursor-pointer ${ring}"><span class="drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">${code}</span></div>`;
                 }
@@ -1958,8 +2106,8 @@
             document.getElementById('summary-call-pct').textContent = `${cPct}%`;
             document.getElementById('summary-fold-pct').textContent = `${fPct}%`;
 
-            const hf = getGtoPreflopFreq(chartState.scenario, chartState.heroPos, chartState.villainPos, heroCode);
-            inspectRangeCell(heroCode, heroCode.length === 2 ? 6 : (heroCode.endsWith('s') ? 4 : 12), hf.raise, hf.call, hf.fold);
+            const hf = getGtoPreflopFreq(chartState.scenario, chartState.heroPos, chartState.villainPos, targetCode);
+            inspectRangeCell(targetCode, targetCode.length === 2 ? 6 : (targetCode.endsWith('s') ? 4 : 12), hf.raise, hf.call, hf.fold);
         }
 
         function inspectRangeCell(code, combos, r, c, f) {
@@ -1972,18 +2120,56 @@
         }
 
         // =========================================================================
-        // 11. 復習モーダル(ミスフィルター付き)・戦績・HTML保存・キーボード操作
+        // 11. 📝 復習モーダル (履歴タップで現況同期レンジ表 ＆ 🔥 弱点ヒートマップ投影)
         // =========================================================================
-        function openReviewModal(onlyMistakes = false) {
+        function openReviewModal(onlyMistakes = false, tab = null) {
             reviewMistakeOnly = onlyMistakes;
-            renderReviewList();
+            if (tab) reviewActiveTab = tab;
+            switchReviewTab(reviewActiveTab);
             document.getElementById('review-modal').classList.remove('hidden');
         }
         function closeReviewModal() { document.getElementById('review-modal').classList.add('hidden'); }
 
+        function switchReviewTab(tab) {
+            reviewActiveTab = tab;
+            const tabListBtn = document.getElementById('review-tab-list');
+            const tabHeatBtn = document.getElementById('review-tab-heatmap');
+            const viewList = document.getElementById('review-view-list');
+            const viewHeat = document.getElementById('review-view-heatmap');
+
+            if (tab === 'list') {
+                tabListBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition bg-emerald-600 text-white shadow flex items-center justify-center gap-1.5';
+                tabHeatBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center gap-1.5';
+                viewList.classList.remove('hidden');
+                viewHeat.classList.add('hidden');
+                renderReviewList();
+            } else {
+                tabListBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center gap-1.5';
+                tabHeatBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-black transition bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow flex items-center justify-center gap-1.5';
+                viewList.classList.add('hidden');
+                viewHeat.classList.remove('hidden');
+                renderMistakeHeatmap();
+            }
+        }
+
         function setReviewFilter(onlyMistakes) {
             reviewMistakeOnly = onlyMistakes;
             renderReviewList();
+        }
+
+        // 履歴アイテムをタップした際に、その時点のポジション・シナリオ・手札に完全同期したレンジ表を開く
+        function openRangeFromReviewItem(logIndex) {
+            const item = state.reviewLogs[logIndex];
+            if (!item) return;
+            cameFromReviewModal = true;
+            chartState.scenario = item.scenario || 'rfi';
+            chartState.heroPos = item.heroPos || item.pos || 'BTN';
+            chartState.villainPos = item.villainPos || 'CO';
+            chartState.highlightHand = item.handCode || 'AKs';
+            validateChartPositions();
+            renderRangeChart();
+            document.getElementById('review-modal').classList.add('hidden');
+            document.getElementById('range-modal').classList.remove('hidden');
         }
 
         function renderReviewList() {
@@ -1996,26 +2182,278 @@
                 ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white'
                 : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300';
 
-            const list = reviewMistakeOnly ? state.reviewLogs.filter(x => x.isMistake) : state.reviewLogs;
+            const indexedLogs = state.reviewLogs
+                .map((item, idx) => ({ item, idx }))
+                .filter(entry => !reviewMistakeOnly || entry.item.isMistake);
+
             const el = document.getElementById('review-list');
-            el.innerHTML = list.length === 0
-                ? `<div class="text-slate-400 text-center py-6">${reviewMistakeOnly ? '現在GTOミスプレイの記録はありません。素晴らしいプレイです！' : 'まだプレイ履歴がありません。'}</div>`
-                : list.map(item => `
-                    <div class="bg-slate-950 border ${item.isMistake ? 'border-rose-500/60' : 'border-slate-800'} rounded-xl p-2.5 flex flex-col gap-1">
+            if (indexedLogs.length === 0) {
+                el.innerHTML = `
+                    <div class="text-slate-400 text-center py-8 bg-slate-950 rounded-xl border border-slate-800">
+                        <p class="font-bold text-slate-300 mb-1">${reviewMistakeOnly ? '現在GTOミスプレイの記録はありません！' : 'まだプレイ履歴がありません。'}</p>
+                        <p class="text-[11px] text-slate-500 mb-3">プレイを進めるか、「＋ サンプルミス追加」で弱点ヒートマップやレンジ同期機能を体験できます。</p>
+                        <button onclick="injectSampleMistakes()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition">＋ サンプルミスデータを追加して試す</button>
+                    </div>
+                `;
+                return;
+            }
+
+            el.innerHTML = indexedLogs.map(({ item, idx }) => {
+                const scName = item.scenario === 'vs_open'
+                    ? `${item.heroPos || item.pos} vs ${item.villainPos || 'CO'} Open`
+                    : (item.scenario === 'vs_3bet' ? `${item.heroPos || item.pos} vs ${item.villainPos || 'BTN'} 3Bet` : `${item.heroPos || item.pos} RFI`);
+                return `
+                    <div onclick="openRangeFromReviewItem(${idx})" class="bg-slate-950 hover:bg-slate-900 border ${item.isMistake ? 'border-rose-500/70 hover:border-rose-400' : 'border-slate-800 hover:border-indigo-400'} rounded-xl p-2.5 flex flex-col gap-1 cursor-pointer transition group shadow">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <span class="text-amber-400 font-bold mono">#${item.handNum} [${item.street.toUpperCase()}]</span>
-                                <span class="text-slate-200 font-bold ml-1">${item.pos} (${item.handCode})</span>
-                                <span class="text-slate-400 ml-1">自分: <strong class="text-white">${item.chosen}</strong> vs 推奨: <strong class="text-emerald-300">${item.recText}</strong></span>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-amber-400 font-bold mono">#${item.handNum} [${(item.street || 'preflop').toUpperCase()}]</span>
+                                <span class="bg-slate-800 text-indigo-300 border border-slate-700 px-1.5 py-0.2 rounded text-[10px] font-bold mono">${scName}</span>
+                                <span class="text-white font-black mono text-sm bg-slate-900 px-1.5 rounded border border-slate-700">${item.handCode}</span>
+                                <span class="text-slate-400">自分: <strong class="text-white">${item.chosen}</strong> vs 推奨: <strong class="text-emerald-300">${item.recText}</strong></span>
                             </div>
-                            <div class="text-right">
+                            <div class="flex items-center gap-2 ml-auto">
                                 <span class="font-bold ${item.isMistake ? 'text-rose-400' : 'text-emerald-300'}">${item.grade}</span>
-                                <span class="text-[11px] text-amber-400 mono ml-2">-${item.evLoss.toFixed(2)}BB</span>
+                                <span class="text-[11px] text-amber-400 mono font-bold">-${item.evLoss.toFixed(2)}BB</span>
                             </div>
                         </div>
-                        <div class="text-[11px] text-slate-400">${item.reason} <span class="mono text-slate-500">[${item.freqs}]</span></div>
+                        <div class="flex items-center justify-between gap-2 text-[11px] text-slate-400 mt-0.5">
+                            <span class="truncate">${item.reason} <span class="mono text-slate-500">[${item.freqs}]</span></span>
+                            <span class="shrink-0 bg-indigo-600/25 group-hover:bg-indigo-600 text-indigo-200 group-hover:text-white border border-indigo-500/40 px-2 py-0.5 rounded-md text-[10px] font-bold transition flex items-center gap-1">
+                                <span>📊</span><span>この状況のレンジ表を開く</span>
+                            </span>
+                        </div>
                     </div>
-                `).join('');
+                `;
+            }).join('');
+        }
+
+        // =========================================================================
+        // 12. 🔥 ミスヒートマップ (弱点投影レンジ表) エンジン
+        // =========================================================================
+        function setHeatmapScenario(sc) {
+            heatmapFilter.scenario = sc;
+            renderMistakeHeatmap();
+        }
+        function setHeatmapPos(pos) {
+            heatmapFilter.heroPos = pos;
+            renderMistakeHeatmap();
+        }
+
+        function getFilteredMistakeLogs() {
+            return state.reviewLogs.filter(item => {
+                if (!item.isMistake) return false;
+                if (heatmapFilter.scenario !== 'all' && item.scenario !== heatmapFilter.scenario) return false;
+                const hPos = item.heroPos || item.pos;
+                if (heatmapFilter.heroPos !== 'ALL' && hPos !== heatmapFilter.heroPos) return false;
+                return true;
+            });
+        }
+
+        function renderMistakeHeatmap() {
+            // シナリオボタンハイライト
+            ['all', 'rfi', 'vs_open', 'vs_3bet'].forEach(sc => {
+                const btn = document.getElementById(`hm-sc-${sc}`);
+                if (!btn) return;
+                btn.className = heatmapFilter.scenario === sc
+                    ? 'px-2 py-1 rounded text-[11px] font-black bg-rose-600 text-white shadow'
+                    : 'px-2 py-1 rounded text-[11px] font-bold bg-slate-800 text-slate-300 hover:bg-slate-700';
+            });
+
+            // ポジションボタン生成
+            const posList = ['ALL', 'UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+            document.getElementById('hm-pos-btns').innerHTML = posList.map(p => {
+                const act = heatmapFilter.heroPos === p;
+                const label = p === 'ALL' ? '全席' : p;
+                return `<button onclick="setHeatmapPos('${p}')" class="px-2 py-1 rounded text-[11px] font-black mono ${act ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">${label}</button>`;
+            }).join('');
+
+            const mistakes = getFilteredMistakeLogs();
+            const handMap = {};
+            const spotCounter = {};
+            let totalEvLoss = 0;
+
+            mistakes.forEach(m => {
+                const code = m.handCode || 'AKo';
+                if (!handMap[code]) handMap[code] = { count: 0, evLoss: 0, logs: [] };
+                handMap[code].count++;
+                handMap[code].evLoss = roundBB(handMap[code].evLoss + (m.evLoss || 0));
+                handMap[code].logs.push(m);
+                totalEvLoss = roundBB(totalEvLoss + (m.evLoss || 0));
+
+                const spKey = m.spotLabel || `${m.heroPos || m.pos} (${m.scenario || 'rfi'})`;
+                spotCounter[spKey] = (spotCounter[spKey] || 0) + 1;
+            });
+
+            // 選択ハンドが未設定またはミスのあるハンドが他にある場合の初期選択補正
+            const sortedHands = Object.keys(handMap).sort((a, b) => handMap[b].count - handMap[a].count || handMap[b].evLoss - handMap[a].evLoss);
+            if (!handMap[heatmapFilter.selectedHand] && sortedHands.length > 0) {
+                heatmapFilter.selectedHand = sortedHands[0];
+            }
+
+            // 13x13 マトリクス描画 (ミス回数が多いほど強く強調)
+            let matrixHTML = '';
+            for (let i = 0; i < 13; i++) {
+                for (let j = 0; j < 13; j++) {
+                    const r1 = RANKS[i], r2 = RANKS[j];
+                    const code = i === j ? (r1 + r2) : (i < j ? `${r1}${r2}s` : `${r2}${r1}o`);
+                    const entry = handMap[code];
+                    const count = entry ? entry.count : 0;
+                    const isSelected = heatmapFilter.selectedHand === code;
+
+                    let cellStyle = '';
+                    if (count === 0) {
+                        cellStyle = 'bg-slate-900/90 text-slate-500 border border-slate-800/80 hover:border-slate-600';
+                    } else if (count === 1) {
+                        cellStyle = 'bg-amber-500/40 text-amber-100 border border-amber-400/80 shadow-inner';
+                    } else if (count === 2) {
+                        cellStyle = 'bg-orange-600/80 text-white border border-orange-300 shadow-md font-black';
+                    } else {
+                        cellStyle = 'bg-gradient-to-br from-rose-600 via-red-600 to-amber-500 text-white border-2 border-yellow-300 shadow-[0_0_12px_rgba(244,63,94,0.9)] z-10 scale-[1.03]';
+                    }
+
+                    const selectRing = isSelected ? 'ring-2 ring-sky-400 z-20' : '';
+
+                    matrixHTML += `
+                        <div onclick="inspectHeatmapCell('${code}')" onmouseenter="inspectHeatmapCell('${code}')"
+                            class="h-7 sm:h-8 rounded flex flex-col items-center justify-center cursor-pointer transition relative ${cellStyle} ${selectRing}">
+                            <span class="text-[9px] sm:text-[10px] font-black mono leading-none">${code}</span>
+                            ${count > 0 ? `<span class="text-[8px] font-black mono leading-none mt-0.5 px-1 rounded bg-black/45 text-yellow-200">×${count}</span>` : ''}
+                        </div>
+                    `;
+                }
+            }
+            document.getElementById('mistake-heatmap-matrix').innerHTML = matrixHTML;
+
+            // サマリー更新
+            document.getElementById('hm-total-mistakes').textContent = `${mistakes.length}件`;
+            document.getElementById('hm-total-evloss').textContent = `-${totalEvLoss.toFixed(2)} BB`;
+
+            const worstSpots = Object.entries(spotCounter).sort((a, b) => b[1] - a[1]);
+            document.getElementById('hm-worst-spot').textContent = worstSpots.length > 0 ? `${worstSpots[0][0]} (${worstSpots[0][1]}回)` : 'ミス記録なし';
+
+            const worstHandsEl = document.getElementById('hm-worst-hands');
+            if (sortedHands.length === 0) {
+                worstHandsEl.innerHTML = `<div class="text-slate-500 text-[11px] bg-slate-900 p-2 rounded-lg border border-slate-800">条件に一致するミスはありません。</div>`;
+            } else {
+                worstHandsEl.innerHTML = sortedHands.slice(0, 3).map((code, idx) => {
+                    const d = handMap[code];
+                    const rankColors = ['bg-rose-600 text-white', 'bg-orange-600 text-white', 'bg-amber-500 text-slate-950'];
+                    return `
+                        <div onclick="inspectHeatmapCell('${code}')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-2.5 py-1.5 flex items-center justify-between cursor-pointer transition">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-black px-1.5 py-0.2 rounded ${rankColors[idx]}">${idx + 1}位</span>
+                                <span class="font-black text-white mono text-xs">${code}</span>
+                            </div>
+                            <div class="text-right mono text-[11px]">
+                                <span class="font-black text-rose-400">ミス ${d.count}回</span>
+                                <span class="text-amber-400 ml-1.5">(-${d.evLoss.toFixed(2)}BB)</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            inspectHeatmapCell(heatmapFilter.selectedHand, handMap);
+        }
+
+        function inspectHeatmapCell(code, cachedMap = null) {
+            heatmapFilter.selectedHand = code;
+            document.getElementById('hm-detail-hand').textContent = code;
+
+            const mistakes = cachedMap
+                ? (cachedMap[code] ? cachedMap[code].logs : [])
+                : getFilteredMistakeLogs().filter(m => m.handCode === code);
+
+            const detailEl = document.getElementById('hm-detail-list');
+            if (!mistakes || mistakes.length === 0) {
+                detailEl.innerHTML = `<div class="text-slate-500 py-2">このハンド (${code}) でのGTOミス記録はありません。</div>`;
+                return;
+            }
+
+            detailEl.innerHTML = mistakes.map(m => {
+                const realIdx = state.reviewLogs.indexOf(m);
+                const spotText = m.spotLabel || `${m.heroPos || m.pos} (${m.scenario || 'rfi'})`;
+                return `
+                    <div onclick="openRangeFromReviewItem(${realIdx})" class="bg-slate-900 hover:bg-slate-800 border border-rose-500/40 rounded-lg p-2 cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-indigo-300 text-[10px]">${spotText}</span>
+                            <span class="text-amber-400 font-bold mono text-[10px]">-${m.evLoss.toFixed(2)}BB</span>
+                        </div>
+                        <div class="text-slate-200 mt-0.5">
+                            自分: <strong class="text-rose-300">${m.chosen}</strong> → 推奨: <strong class="text-emerald-300">${m.recText}</strong>
+                        </div>
+                        <div class="text-[10px] text-indigo-400 font-bold mt-0.5">📊 タップでこの状況のレンジ表へ</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openRangeFromHeatmapCell() {
+            const code = heatmapFilter.selectedHand || 'AKo';
+            const mistakes = getFilteredMistakeLogs().filter(m => m.handCode === code);
+            cameFromReviewModal = true;
+            if (mistakes.length > 0) {
+                const latest = mistakes[0];
+                chartState.scenario = latest.scenario || 'rfi';
+                chartState.heroPos = latest.heroPos || latest.pos || 'BTN';
+                chartState.villainPos = latest.villainPos || 'CO';
+            } else {
+                chartState.scenario = heatmapFilter.scenario === 'all' ? 'rfi' : heatmapFilter.scenario;
+                chartState.heroPos = heatmapFilter.heroPos === 'ALL' ? 'BTN' : heatmapFilter.heroPos;
+                chartState.villainPos = 'CO';
+            }
+            chartState.highlightHand = code;
+            validateChartPositions();
+            renderRangeChart();
+            document.getElementById('review-modal').classList.add('hidden');
+            document.getElementById('range-modal').classList.remove('hidden');
+        }
+
+        // サンプルミスデータ投入（ヒートマップの濃淡確認・テスト用）
+        function injectSampleMistakes() {
+            const samples = [
+                { handCode: 'A9o', heroPos: 'UTG', villainPos: 'CO', scenario: 'rfi', spotLabel: 'UTG オープン判断 (RFI)', chosen: 'Raise', recText: 'Fold 100%', evLoss: 0.95, freqs: 'R:0% / C:0% / F:100%', reason: '【UTG オープン判断】A9o はUTGではドミネイトされやすくFold推奨です。' },
+                { handCode: 'A9o', heroPos: 'MP', villainPos: 'UTG', scenario: 'vs_open', spotLabel: 'MP vs UTG Open', chosen: 'Call', recText: 'Fold 100%', evLoss: 1.15, freqs: 'R:0% / C:0% / F:100%', reason: '【MP vs UTG Open】A9o はUTGの強レンジに対してキッカー負けするためFold推奨です。' },
+                { handCode: 'A9o', heroPos: 'CO', villainPos: 'UTG', scenario: 'vs_open', spotLabel: 'CO vs UTG Open', chosen: 'Call', recText: 'Fold 100%', evLoss: 1.05, freqs: 'R:0% / C:0% / F:100%', reason: '【CO vs UTG Open】オフスートAxのコールドコールはGTOで最も避けるべきリークです。' },
+                { handCode: 'KJo', heroPos: 'SB', villainPos: 'CO', scenario: 'vs_open', spotLabel: 'SB vs CO Open', chosen: 'Call', recText: 'Fold 90%', evLoss: 0.85, freqs: 'R:0% / C:10% / F:90%', reason: '【SB vs CO Open】OOPからのKJoフラットコールはEVロスが大きいです。' },
+                { handCode: 'KJo', heroPos: 'UTG', villainPos: 'CO', scenario: 'rfi', spotLabel: 'UTG オープン判断 (RFI)', chosen: 'Raise', recText: 'Fold 100%', evLoss: 0.75, freqs: 'R:0% / C:0% / F:100%', reason: '【UTG RFI】KJo はUTGオープンレンジ外です。' },
+                { handCode: 'QTs', heroPos: 'CO', villainPos: 'BTN', scenario: 'vs_3bet', spotLabel: 'CO vs BTN 3Bet', chosen: 'Raise', recText: 'Call 70%', evLoss: 1.25, freqs: 'R:15% / C:70% / F:15%', reason: '【CO vs BTN 3Bet】QTs は4BetではなくCallでディフェンスするハンドです。' },
+                { handCode: 'A5s', heroPos: 'BTN', villainPos: 'CO', scenario: 'vs_open', spotLabel: 'BTN vs CO Open', chosen: 'Fold', recText: 'Raise 65%', evLoss: 0.65, freqs: 'R:65% / C:35% / F:0%', reason: '【BTN vs CO Open】A5s はブロッカー効果が高く3Betブラフの筆頭候補です。' }
+            ];
+
+            samples.forEach((s, idx) => {
+                state.reviewLogs.unshift({
+                    id: Date.now() + idx + Math.random(),
+                    handNum: state.handNum + idx,
+                    street: 'preflop',
+                    pos: s.heroPos,
+                    heroPos: s.heroPos,
+                    villainPos: s.villainPos,
+                    scenario: s.scenario,
+                    spotLabel: s.spotLabel,
+                    handCode: s.handCode,
+                    chosen: s.chosen,
+                    recText: s.recText,
+                    grade: `🚨 GTO重大ミス (${s.chosen}: 推奨 0%)`,
+                    evLoss: s.evLoss,
+                    isMistake: true,
+                    reason: s.reason,
+                    freqs: s.freqs
+                });
+            });
+            heatmapFilter.selectedHand = 'A9o';
+            saveStats();
+            updateMistakeBadge();
+            renderReviewList();
+            renderMistakeHeatmap();
+        }
+
+        function clearReviewHistory() {
+            state.reviewLogs = [];
+            saveStats();
+            updateMistakeBadge();
+            renderReviewList();
+            renderMistakeHeatmap();
         }
 
         function openStatsModal() {
@@ -2063,16 +2501,10 @@
             }
         });
 
-                window.onload = () => {
+        window.onload = () => {
             assignPositions();
             startNewHand();
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(err => {
-                    console.log('SW registration failed:', err);
-                });
-            }
         };
     </script>
 </body>
 </html>
-
