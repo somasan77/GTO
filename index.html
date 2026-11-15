@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ten-Four GTO Poker - 完全日本語オフライン版</title>
+    <!-- ▼ PWA / Android & iOS アプリ化必須設定（削除厳禁） ▼ -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0f1117">
+<link rel="apple-touch-icon" href="./icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GTO Poker">
+<!-- ▲ PWA設定ここまで ▲ -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
@@ -2506,5 +2516,16 @@
             startNewHand();
         };
     </script>
+    <!-- ▼ PWA Service Worker登録（削除厳禁） ▼ -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error:', err));
+    });
+  }
+</script>
+<!-- ▲ PWA設定ここまで ▲ -->
+</body>
+
 </body>
 </html>
