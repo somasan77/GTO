@@ -57,11 +57,69 @@
         .seat-turn { animation: turnGlow 1.3s infinite; }
         /* 直近アグレッサーの強調 */
         .seat-aggressor { box-shadow: 0 0 0 2px #f43f5e, 0 0 16px rgba(244,63,94,0.45); }
+        /* 🏆 勝者プレイヤーのゴールド発光ハイライト演出 */
+        @keyframes winnerPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 2px #fbbf24, 0 0 22px rgba(251, 191, 36, 0.9), inset 0 0 12px rgba(251, 191, 36, 0.35);
+                transform: translateY(-2px) scale(1.03);
+            }
+            50% {
+                box-shadow: 0 0 0 4px #fde047, 0 0 34px rgba(250, 204, 21, 1), inset 0 0 18px rgba(251, 191, 36, 0.55);
+                transform: translateY(-4px) scale(1.05);
+            }
+        }
+        .seat-winner {
+            animation: winnerPulse 1.15s ease-in-out infinite;
+            border-color: #fbbf24 !important;
+            z-index: 30;
+        }
+        @keyframes winBadgePop {
+            0% { opacity: 0; transform: translateY(6px) scale(0.75); }
+            70% { opacity: 1; transform: translateY(-2px) scale(1.08); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .winner-float-badge {
+            animation: winBadgePop 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
         /* Foldしたプレイヤーのグレーアウト＆半透明化 */
         .seat-folded {
             opacity: 0.38;
             filter: grayscale(0.92);
             transform: scale(0.95);
+        }
+        /* カジノ風 立体ディーラーボタン（文鎮/パック）のスムーズ回転移動 */
+        .dealer-puck {
+            position: absolute;
+            z-index: 25;
+            width: 30px;
+            height: 30px;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 32% 28%, #ffffff 0%, #f8fafc 45%, #cbd5e1 82%, #94a3b8 100%);
+            border: 2.5px solid #f59e0b;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.75), 0 0 0 1.5px #0f172a, inset 0 2px 3px rgba(255,255,255,0.9), inset 0 -2px 4px rgba(15,23,42,0.35);
+            transition: top 0.55s cubic-bezier(0.22, 1, 0.36, 1), left 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        @media (min-width: 640px) {
+            .dealer-puck { width: 36px; height: 36px; }
+        }
+        /* 各座席に対応するディーラーパック座標（カードや中央ボードと重ならない内周位置） */
+        .puck-pos-0 { top: 75%; left: 66%; }
+        .puck-pos-1 { top: 65%; left: 29%; }
+        .puck-pos-2 { top: 31%; left: 29%; }
+        .puck-pos-3 { top: 23%; left: 35%; }
+        .puck-pos-4 { top: 31%; left: 71%; }
+        .puck-pos-5 { top: 65%; left: 71%; }
+        @media (min-width: 640px) {
+            .puck-pos-0 { top: 74%; left: 60%; }
+            .puck-pos-1 { top: 66%; left: 24%; }
+            .puck-pos-2 { top: 30%; left: 24%; }
+            .puck-pos-3 { top: 22%; left: 40%; }
+            .puck-pos-4 { top: 30%; left: 76%; }
+            .puck-pos-5 { top: 66%; left: 76%; }
         }
         /* 数値入力のスピンボタン非表示 */
         input[type=number]::-webkit-inner-spin-button,
@@ -188,6 +246,14 @@
 
                     <div id="table-street-label" class="mt-1 bg-slate-950/85 border border-emerald-500/35 text-emerald-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide shadow text-center truncate max-w-[240px] sm:max-w-md">
                         プリフロップ
+                    </div>
+                </div>
+
+                <!-- 🪙 カジノ風 ディーラーボタン（文鎮/パック）：ハンドごとにBTNプレイヤーの席へ回転スライド移動 -->
+                <div id="dealer-puck" class="dealer-puck puck-pos-0" style="transform: translate(-50%, -50%) rotate(0deg);">
+                    <div class="w-[22px] h-[22px] sm:w-[28px] sm:h-[28px] rounded-full border border-dashed border-amber-600/80 bg-gradient-to-b from-white to-slate-200 flex flex-col items-center justify-center leading-none shadow-inner">
+                        <span class="text-[5px] sm:text-[6px] font-black tracking-tighter text-amber-700 mono">DEALER</span>
+                        <span class="text-[9px] sm:text-[11px] font-black text-slate-900 mono -mt-0.5">D</span>
                     </div>
                 </div>
 
@@ -618,6 +684,7 @@
         let reviewActiveTab = 'list'; // 'list' | 'heatmap'
         let lastBannerSpot = null;
         let cameFromReviewModal = false;
+        let puckSpinDeg = 0;
 
         // ヒートマップ用フィルタ状態
         let heatmapFilter = {
@@ -827,12 +894,12 @@
             reviewLogs: [],
             stats: { hands: 0, wins: 0, profitBB: 0, vpipCount: 0, pfrCount: 0, gtoChecks: 0, gtoOptimal: 0, totalEvLoss: 0 },
             players: [
-                { id: 0, name: 'Hero', isAI: false, profile: 'GTO', pos: 'BTN', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
-                { id: 1, name: 'AI-1', isAI: true, profile: 'BALANCED', pos: 'SB', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
-                { id: 2, name: 'AI-2', isAI: true, profile: 'AGGRO', pos: 'BB', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
-                { id: 3, name: 'AI-3', isAI: true, profile: 'TIGHT', pos: 'UTG', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
-                { id: 4, name: 'AI-4', isAI: true, profile: 'BALANCED', pos: 'MP', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' },
-                { id: 5, name: 'AI-5', isAI: true, profile: 'AGGRO', pos: 'CO', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '' }
+                { id: 0, name: 'Hero', isAI: false, profile: 'GTO', pos: 'BTN', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '', isWinner: false, wonAmount: 0 },
+                { id: 1, name: 'AI-1', isAI: true, profile: 'BALANCED', pos: 'SB', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '', isWinner: false, wonAmount: 0 },
+                { id: 2, name: 'AI-2', isAI: true, profile: 'AGGRO', pos: 'BB', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '', isWinner: false, wonAmount: 0 },
+                { id: 3, name: 'AI-3', isAI: true, profile: 'TIGHT', pos: 'UTG', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '', isWinner: false, wonAmount: 0 },
+                { id: 4, name: 'AI-4', isAI: true, profile: 'BALANCED', pos: 'MP', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '', isWinner: false, wonAmount: 0 },
+                { id: 5, name: 'AI-5', isAI: true, profile: 'AGGRO', pos: 'CO', stack: 100, bet: 0, totalIn: 0, folded: false, allIn: false, acted: false, cards: [], actionText: '', actionType: '', isWinner: false, wonAmount: 0 }
             ]
         };
 
@@ -896,7 +963,7 @@
         }
 
         // =========================================================================
-        // 4. ハンド開始＆特訓モード初期化
+        // 4. ハンド開始＆特訓モード初期化 (ディーラーパック回転制御)
         // =========================================================================
         function createDeck() {
             const d = [];
@@ -952,7 +1019,10 @@
                 p.bet = 0; p.totalIn = 0; p.folded = false; p.allIn = false; p.acted = false;
                 p.cards = [state.deck.pop(), state.deck.pop()];
                 p.actionText = ''; p.actionType = ''; p.showdownHand = null;
+                p.isWinner = false; p.wonAmount = 0;
             });
+
+            const prevDealerIdx = state.dealerIdx;
 
             if (drillMode === 'normal') {
                 state.dealerIdx = (state.dealerIdx + 1) % 6;
@@ -1011,6 +1081,10 @@
                 postChip(bbIdx, 1.0, 'BB 1BB', 'blind');
                 state.lastAggressorIdx = bbIdx; state.activeIdx = sbIdx;
                 addLog(`⚔️ 【特訓: SB vs BB】SBの番から開始`, 'text-amber-300 font-bold');
+            }
+
+            if (prevDealerIdx !== state.dealerIdx) {
+                puckSpinDeg += 360;
             }
 
             playSound('deal');
@@ -1568,15 +1642,18 @@
         }
 
         // =========================================================================
-        // 7. ショーダウン＆7枚役判定エンジン
+        // 7. ショーダウン＆7枚役判定エンジン (勝者ハイライト状態付与)
         // =========================================================================
         function awardUncontested(winner, silent = false) {
             state.inProgress = false;
             winner.stack = roundBB(winner.stack + state.pot);
+            winner.isWinner = true;
+            winner.wonAmount = roundBB(state.pot);
+
             const hero = state.players[0];
             recordHandResult(winner.id === 0, roundBB((winner.id === 0 ? state.pot : 0) - hero.totalIn));
 
-            const msg = `🏆 ${winner.pos} が ${fmtBB(state.pot)} 獲得`;
+            const msg = `🏆 ${winner.pos} (${winner.name}) が ${fmtBB(state.pot)} 獲得`;
             state.lastWinnerText = msg;
             addLog(msg, 'text-amber-400 font-bold');
 
@@ -1601,7 +1678,11 @@
                 else if (r.score === bestScore) winners.push(p);
             });
             const share = roundBB(state.pot / winners.length);
-            winners.forEach(w => w.stack = roundBB(w.stack + share));
+            winners.forEach(w => {
+                w.stack = roundBB(w.stack + share);
+                w.isWinner = true;
+                w.wonAmount = share;
+            });
 
             const hero = state.players[0];
             const heroWon = winners.some(w => w.id === 0);
@@ -1676,7 +1757,7 @@
         }
 
         // =========================================================================
-        // 8. カード＆座席描画 (指定カードサイズ ＆ バイシクルライダーバックSVG)
+        // 8. カード＆座席＆ディーラーパック描画 (勝者ハイライト対応)
         // =========================================================================
         function fmtCardsStr(cards) { return cards.map(c => `${c.rank}${SUIT_SYM[c.suit]}`).join(' '); }
 
@@ -1733,6 +1814,15 @@
         }
 
         function getSeatActionStyle(p) {
+            if (!state.inProgress && p.isWinner) {
+                const winRole = p.showdownHand ? `${p.showdownHand.nameJa}` : `+${fmtBB(p.wonAmount)} 獲得`;
+                return {
+                    barCls: 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black border-t border-yellow-200 shadow-inner',
+                    boxBorder: 'border-amber-400 seat-winner',
+                    text: `🏆 ${winRole}`,
+                    badge: ''
+                };
+            }
             const isLatestAggressor = (state.lastAggressorIdx === p.id && state.currentBet > 0 && !p.folded);
             if (p.folded || p.actionType === 'fold') {
                 return { barCls: 'bg-slate-900/80 text-slate-500 border-t border-slate-800', boxBorder: 'border-slate-800', text: 'Fold', badge: '' };
@@ -1762,16 +1852,26 @@
             return { barCls: 'bg-slate-900/90 text-slate-400 border-t border-slate-800', boxBorder: 'border-slate-700', text: '待機中', badge: '' };
         }
 
+        function renderDealerPuck() {
+            const puckEl = document.getElementById('dealer-puck');
+            if (!puckEl) return;
+            const btnSeatIdx = state.players.findIndex(p => p.pos === 'BTN');
+            const targetIdx = btnSeatIdx >= 0 ? btnSeatIdx : state.dealerIdx;
+            puckEl.className = `dealer-puck puck-pos-${targetIdx}`;
+            puckEl.style.transform = `translate(-50%, -50%) rotate(${puckSpinDeg}deg)`;
+        }
+
         function renderAll() {
             const streetNames = { preflop: 'プリフロップ', flop: 'フロップ', turn: 'ターン', river: 'リバー', showdown: 'ショーダウン' };
             document.getElementById('pot-amount').textContent = fmtBB(state.pot);
             document.getElementById('header-meta-badge').textContent = `#${state.handNum} · ${state.players[0].pos}`;
             updateMistakeBadge();
+            renderDealerPuck();
 
             const centerLabel = document.getElementById('table-street-label');
             if (!state.inProgress && state.lastWinnerText) {
                 centerLabel.textContent = state.lastWinnerText;
-                centerLabel.className = 'mt-1 bg-slate-950/90 border border-amber-400/60 text-amber-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide shadow text-center truncate max-w-[250px] sm:max-w-md';
+                centerLabel.className = 'mt-1 bg-slate-950/95 border-2 border-amber-400 text-amber-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-black tracking-wide shadow-[0_0_16px_rgba(251,191,36,0.5)] text-center truncate max-w-[260px] sm:max-w-md';
             } else {
                 centerLabel.textContent = streetNames[state.street] || 'プリフロップ';
                 centerLabel.className = 'mt-1 bg-slate-950/85 border border-emerald-500/35 text-emerald-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide shadow text-center truncate max-w-[250px] sm:max-w-md';
@@ -1803,12 +1903,19 @@
                 else if (p.pos === 'SB' || p.pos === 'BB') posBadgeCls = 'bg-indigo-600 text-white border-indigo-400';
 
                 const panelWidth = idx === 0 ? 'w-[116px] sm:w-[144px]' : 'w-[92px] sm:w-[128px]';
-                const sdBadge = (state.street === 'showdown' && !p.folded && p.showdownHand)
-                    ? `<div class="mt-0.5 bg-amber-400 text-slate-950 font-black text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full shadow">${p.showdownHand.nameJa}</div>`
+
+                // 勝者の場合はカード上部にゴールドの「🏆 WIN +◯◯BB」バッジを表示
+                const winnerBanner = (!state.inProgress && p.isWinner)
+                    ? `<div class="winner-float-badge mb-0.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-[9px] sm:text-[11px] px-2 py-0.5 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.95)] border border-white flex items-center gap-0.5 mono"><span>🏆</span><span>WIN +${fmtBB(p.wonAmount)}</span></div>`
+                    : '';
+
+                const sdBadge = (state.street === 'showdown' && !p.folded && p.showdownHand && !p.isWinner)
+                    ? `<div class="mt-0.5 bg-slate-900/95 border border-slate-600 text-slate-300 font-bold text-[8px] sm:text-[10px] px-1.5 py-0.2 rounded-full shadow">${p.showdownHand.nameJa}</div>`
                     : '';
 
                 seatEl.innerHTML = `
                     <div class="flex flex-col items-center transition-all duration-200 ${foldWrapCls}">
+                        ${winnerBanner}
                         <div class="flex items-center justify-center gap-1 mb-0.5">
                             ${renderCardHTML(p.cards[0], showCards, role)}
                             ${renderCardHTML(p.cards[1], showCards, role)}
@@ -1818,7 +1925,7 @@
                             <div class="px-1.5 pt-0.5 pb-0.5">
                                 <div class="flex items-center gap-1 text-[9px] sm:text-[11px] font-bold pr-3">
                                     <span class="px-1 rounded border text-[8px] sm:text-[10px] font-black mono ${posBadgeCls}">${p.pos}</span>
-                                    <span class="truncate text-slate-200">${p.name}</span>
+                                    <span class="truncate ${p.isWinner ? 'text-amber-300 font-black' : 'text-slate-200'}">${p.name}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-[10px] sm:text-xs">
                                     <span class="text-[9px] text-slate-400 hidden sm:inline">Stack</span>
@@ -2525,7 +2632,5 @@
   }
 </script>
 <!-- ▲ PWA設定ここまで ▲ -->
-</body>
-
 </body>
 </html>
