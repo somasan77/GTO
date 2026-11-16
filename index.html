@@ -330,19 +330,39 @@
                     </button>
                 </div>
 
-                <div class="grid grid-cols-3 gap-2 text-center bg-slate-950 p-2 rounded-xl border border-slate-800">
+                <!-- 4列サマリー: ハンド / 推定勝率 / 必要勝率 / 推奨アクション額 -->
+                <div class="grid grid-cols-4 gap-1.5 text-center bg-slate-950 p-2 rounded-xl border border-slate-800">
                     <div>
-                        <div class="text-[10px] text-slate-400">ハンド表記</div>
-                        <div id="gto-hand-code" class="text-base font-black text-amber-400 mono mt-0.5">AKs</div>
+                        <div class="text-[10px] text-slate-400">ハンド</div>
+                        <div id="gto-hand-code" class="text-sm sm:text-base font-black text-amber-400 mono mt-0.5">AKs</div>
                     </div>
                     <div>
-                        <div class="text-[10px] text-slate-400">推定エクイティ</div>
-                        <div id="gto-equity" class="text-base font-black text-emerald-400 mono mt-0.5">64%</div>
+                        <div class="text-[10px] text-slate-400">推定勝率</div>
+                        <div id="gto-equity" class="text-sm sm:text-base font-black text-emerald-400 mono mt-0.5">64%</div>
                     </div>
                     <div>
-                        <div class="text-[10px] text-slate-400">必要勝率(オッズ)</div>
-                        <div id="gto-pot-odds" class="text-base font-black text-sky-400 mono mt-0.5">25%</div>
+                        <div class="text-[10px] text-slate-400">必要勝率</div>
+                        <div id="gto-pot-odds" class="text-sm sm:text-base font-black text-sky-400 mono mt-0.5">25%</div>
                     </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-bold">推奨サイズ</div>
+                        <div id="gto-rec-bet-short" class="text-xs sm:text-sm font-black text-rose-400 mono mt-1">2.5BB</div>
+                    </div>
+                </div>
+
+                <!-- 💡 アクション連動型: GTO推奨アクション＆適正サイズガイド -->
+                <div id="gto-rec-sizing-box" class="bg-gradient-to-r from-rose-950/70 via-slate-950 to-slate-950 border border-rose-500/40 rounded-xl p-2 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                            <span>💡 GTO推奨アクション・適正サイズ</span>
+                        </div>
+                        <div id="gto-rec-bet-detail" class="text-xs sm:text-sm font-black text-amber-300 mono truncate mt-0.5">
+                            🔥 Raise 2.5BB (標準オープン)
+                        </div>
+                    </div>
+                    <button type="button" id="gto-rec-set-btn" onclick="applyRecommendedBetSize(false)" class="shrink-0 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-[11px] font-black px-2.5 py-1.5 rounded-lg shadow border border-rose-400/50 transition flex items-center gap-1">
+                        <span>⚡</span><span>セット</span>
+                    </button>
                 </div>
 
                 <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 text-xs flex flex-col gap-1">
@@ -761,13 +781,40 @@
         function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
         function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
 
+        function applyRecommendedBetSize(closeModalAfter = false) {
+            const gto = getCurrentHeroGTO();
+            if (!gto.canSetBet || !gto.recRaiseBB) return;
+            const hero = state.players[0];
+            const maxBet = roundBB(hero.bet + hero.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+            const target = roundBB(Math.max(minBet, Math.min(maxBet, gto.recRaiseBB)));
+            const input = document.getElementById('bet-input');
+            if (input) {
+                input.value = target;
+                onBetInputChange(target);
+            }
+            playSound('chip');
+            if (closeModalAfter) closeCoachModal();
+        }
+
         function openCoachModal() {
             const gto = getCurrentHeroGTO();
+            const setBtnHTML = gto.canSetBet
+                ? `<button type="button" onclick="applyRecommendedBetSize(true)" class="shrink-0 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow border border-rose-400/50 transition flex items-center gap-1"><span>⚡</span><span>セット</span></button>`
+                : '';
             document.getElementById('mobile-coach-body').innerHTML = `
-                <div class="grid grid-cols-3 gap-2 text-center bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                    <div><div class="text-[10px] text-slate-400">ハンド</div><div class="text-base font-black text-amber-400 mono mt-0.5">${gto.handCode}</div></div>
-                    <div><div class="text-[10px] text-slate-400">推定勝率</div><div class="text-base font-black text-emerald-400 mono mt-0.5">${gto.equity}%</div></div>
-                    <div><div class="text-[10px] text-slate-400">必要勝率</div><div class="text-base font-black text-sky-400 mono mt-0.5">${gto.potOdds}%</div></div>
+                <div class="grid grid-cols-4 gap-1.5 text-center bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div><div class="text-[10px] text-slate-400">ハンド</div><div class="text-sm font-black text-amber-400 mono mt-0.5">${gto.handCode}</div></div>
+                    <div><div class="text-[10px] text-slate-400">推定勝率</div><div class="text-sm font-black text-emerald-400 mono mt-0.5">${gto.equity}%</div></div>
+                    <div><div class="text-[10px] text-slate-400">必要勝率</div><div class="text-sm font-black text-sky-400 mono mt-0.5">${gto.potOdds}%</div></div>
+                    <div><div class="text-[10px] text-slate-400 font-bold">推奨サイズ</div><div class="text-xs sm:text-sm font-black ${gto.shortColorCls} mono mt-1">${gto.recShortText}</div></div>
+                </div>
+                <div class="${gto.boxStyleCls} rounded-xl p-2.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="text-[10px] text-slate-400 font-bold">💡 GTO推奨アクション・適正サイズ</div>
+                        <div class="text-xs sm:text-sm font-black ${gto.detailColorCls} mono truncate mt-0.5">${gto.recDetailText}</div>
+                    </div>
+                    ${setBtnHTML}
                 </div>
                 <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
                     <div class="flex justify-between"><span class="text-slate-400">状況:</span><span class="font-bold text-indigo-300">${gto.spotLabel}</span></div>
@@ -1346,11 +1393,47 @@
         // =========================================================================
         // 6. GTO AI思考 ＆ ポストフロップ解析 ＆ ミスプレイ即時警告バナー
         // =========================================================================
+        function computeRealisticRaiseTarget(actor, isPreflop, scenario, postRecRatio) {
+            const maxBet = roundBB(actor.bet + actor.stack);
+            const minBet = roundBB(Math.min(maxBet, Math.max(state.minRaiseTo, state.currentBet > 0 ? state.minRaiseTo : 1.0)));
+
+            if (isPreflop) {
+                if (scenario === 'rfi' || state.raiseCountThisStreet <= 1) {
+                    const rfi = actor.pos === 'SB' ? 3.0 : 2.5;
+                    return roundBB(Math.min(maxBet, Math.max(minBet, rfi)));
+                }
+                if (scenario === 'vs_open' || state.raiseCountThisStreet === 2) {
+                    const isOOP = (actor.pos === 'SB' || actor.pos === 'BB');
+                    const baseOpen = Math.min(4.0, Math.max(2.0, state.currentBet));
+                    const raw3Bet = isOOP ? roundBB(baseOpen * 3.8) : roundBB(baseOpen * 3.0);
+                    const capped3Bet = Math.min(isOOP ? 11.0 : 9.0, Math.max(isOOP ? 8.5 : 6.5, raw3Bet));
+                    return roundBB(Math.min(maxBet, Math.max(minBet, capped3Bet)));
+                }
+                // vs 3Bet (4Bet): 18BB〜23BB程度に抑え、インフレを防止
+                const base3Bet = Math.min(12.0, Math.max(6.5, state.currentBet));
+                const raw4Bet = roundBB(base3Bet * 2.25);
+                const capped4Bet = Math.min(24.0, Math.max(17.5, raw4Bet));
+                return roundBB(Math.min(maxBet, Math.max(minBet, capped4Bet)));
+            } else {
+                const ratio = postRecRatio || 0.33;
+                if (state.currentBet <= 0) {
+                    const rawLead = roundBB(Math.max(1.0, state.pot * ratio));
+                    return roundBB(Math.min(maxBet, Math.max(minBet, rawLead)));
+                } else {
+                    const toCall = Math.max(0, state.currentBet - actor.bet);
+                    const potRaiseCap = roundBB(state.currentBet + (state.pot + toCall) * 0.75);
+                    const multRaise = roundBB(state.currentBet * 2.6);
+                    const rawRaise = Math.min(potRaiseCap, multRaise);
+                    return roundBB(Math.min(maxBet, Math.max(minBet, rawRaise)));
+                }
+            }
+        }
+
         function executeAITurn(ai, silent = false) {
             if (!state.inProgress) return;
             const toCall = roundBB(Math.max(0, state.currentBet - ai.bet));
             const handCode = getHandCode(ai.cards);
-            const aggroBias = ai.profile === 'AGGRO' ? 8 : (ai.profile === 'TIGHT' ? -6 : 0);
+            const aggroBias = ai.profile === 'AGGRO' ? 6 : (ai.profile === 'TIGHT' ? -6 : 0);
 
             if (state.street === 'preflop') {
                 let scenario = 'rfi', villainPos = 'UTG';
@@ -1370,10 +1453,9 @@
                     const rCut = Math.max(0, Math.min(100, freq.raise + aggroBias));
                     const cCut = rCut + freq.call;
 
+                    // プリフロップは最大4Bet(raiseCountThisStreet < 4)までに制限し異常なレイズ合戦を防ぐ
                     if (roll < rCut && state.raiseCountThisStreet < 4) {
-                        const target = scenario === 'rfi'
-                            ? (ai.pos === 'SB' ? 3.0 : 2.5)
-                            : (scenario === 'vs_open' ? roundBB(state.currentBet * 3.0) : roundBB(state.currentBet * 2.3));
+                        const target = computeRealisticRaiseTarget(ai, true, scenario, 0.33);
                         applyAction(ai.id, 'raise', target, silent);
                     } else if (roll < cCut || toCall <= 0) {
                         applyAction(ai.id, 'call', 0, silent);
@@ -1387,10 +1469,9 @@
                 const rCut = Math.max(0, Math.min(100, post.raise + aggroBias));
                 const cCut = rCut + post.call;
 
-                if (roll < rCut && state.raiseCountThisStreet < 3) {
-                    const betSize = state.currentBet <= 0
-                        ? roundBB(Math.max(1.0, state.pot * post.recSizeRatio))
-                        : roundBB(state.currentBet * 2.5);
+                // ポストフロップは1ストリート最大2レイズまでに制限しベット額の暴走を防止
+                if (roll < rCut && state.raiseCountThisStreet < 2) {
+                    const betSize = computeRealisticRaiseTarget(ai, false, 'rfi', post.recSizeRatio);
                     applyAction(ai.id, 'raise', betSize, silent);
                 } else if (roll < cCut || toCall <= 0) {
                     applyAction(ai.id, 'call', 0, silent);
@@ -1500,6 +1581,86 @@
             return { scenario, heroPos: hero.pos, villainPos, spotLabel };
         }
 
+        // ハンドのGTO推奨頻度(Fold / Check / Call / Raise)に応じて適切なサイズ表示を返す
+        function buildActionAwareSizingInfo(hero, meta, freq, toCall, postAnalysis) {
+            const isPreflop = state.street === 'preflop';
+            const recRaiseBB = computeRealisticRaiseTarget(
+                hero,
+                isPreflop,
+                meta.scenario,
+                postAnalysis ? postAnalysis.recSizeRatio : 0.33
+            );
+
+            let raiseActionTag = '';
+            if (isPreflop) {
+                if (meta.scenario === 'rfi' || state.raiseCountThisStreet <= 1) {
+                    raiseActionTag = hero.pos === 'SB' ? `Raise ${fmtBB(recRaiseBB)} (SB標準オープン)` : `Raise ${fmtBB(recRaiseBB)} (標準オープン)`;
+                } else if (meta.scenario === 'vs_open' || state.raiseCountThisStreet === 2) {
+                    const isOOP = (hero.pos === 'SB' || hero.pos === 'BB');
+                    raiseActionTag = `3Bet ${fmtBB(recRaiseBB)} (${isOOP ? 'OOP 3.8x' : 'IP 3.0x'})`;
+                } else {
+                    raiseActionTag = `4Bet ${fmtBB(recRaiseBB)} (2.25x標準)`;
+                }
+            } else {
+                const pct = Math.round((postAnalysis ? postAnalysis.recSizeRatio : 0.33) * 100);
+                raiseActionTag = state.currentBet <= 0
+                    ? `Bet ${fmtBB(recRaiseBB)} (Pot ${pct}% CB)`
+                    : `Raise ${fmtBB(recRaiseBB)} (2.6x標準)`;
+            }
+
+            // ケース1: 未ベット(toCall == 0) かつ Bet/Raise頻度が低い(< 20%) → Check推奨
+            if (toCall <= 0 && freq.raise < 20) {
+                return {
+                    canSetBet: false,
+                    recRaiseBB: 0,
+                    recShortText: 'Check (0BB)',
+                    recDetailText: '✋ Check推奨 (0BB / ポットコントロール)',
+                    shortColorCls: 'text-sky-400',
+                    detailColorCls: 'text-sky-300',
+                    boxStyleCls: 'bg-slate-950 border border-sky-500/40'
+                };
+            }
+
+            // ケース2: ベット直面(toCall > 0) かつ Raise頻度 < 15% かつ Fold >= Call → Fold推奨（Bet額は絶対に出さない）
+            if (toCall > 0 && freq.raise < 15 && freq.fold >= freq.call) {
+                return {
+                    canSetBet: false,
+                    recRaiseBB: 0,
+                    recShortText: 'Fold (0BB)',
+                    recDetailText: `🛑 なし (Fold ${freq.fold}%推奨 / ベット不要)`,
+                    shortColorCls: 'text-slate-400',
+                    detailColorCls: 'text-slate-300',
+                    boxStyleCls: 'bg-slate-950 border border-slate-700'
+                };
+            }
+
+            // ケース3: Callが最有力 (toCall > 0 かつ Call > Raise かつ Raise < 30%) → Call止め推奨
+            const callAmt = roundBB(Math.min(hero.stack, toCall));
+            if (toCall > 0 && freq.call > freq.raise && freq.raise < 30) {
+                const subNote = freq.raise >= 15 ? ` / 混合Raise時 ${fmtBB(recRaiseBB)}` : ' (コール止め推奨)';
+                return {
+                    canSetBet: freq.raise >= 15,
+                    recRaiseBB: freq.raise >= 15 ? recRaiseBB : 0,
+                    recShortText: `Call ${fmtBB(callAmt)}`,
+                    recDetailText: `📞 Call ${fmtBB(callAmt)}${subNote}`,
+                    shortColorCls: 'text-emerald-400',
+                    detailColorCls: 'text-emerald-300',
+                    boxStyleCls: 'bg-emerald-950/40 border border-emerald-500/40'
+                };
+            }
+
+            // ケース4: Bet / Raise が推奨されるハンド (Raise >= 20%)
+            return {
+                canSetBet: true,
+                recRaiseBB,
+                recShortText: fmtBB(recRaiseBB),
+                recDetailText: `🔥 ${raiseActionTag}`,
+                shortColorCls: 'text-rose-400',
+                detailColorCls: 'text-amber-300',
+                boxStyleCls: 'bg-gradient-to-r from-rose-950/70 via-slate-950 to-slate-950 border border-rose-500/40'
+            };
+        }
+
         function getCurrentHeroGTO() {
             const hero = state.players[0];
             const handCode = getHandCode(hero.cards);
@@ -1508,18 +1669,43 @@
             const meta = getCurrentPreflopSpotMeta();
 
             if (state.street === 'preflop') {
-                const freq = getGtoPreflopFreq(meta.scenario, meta.heroPos, meta.villainPos, handCode);
+                let freq = getGtoPreflopFreq(meta.scenario, meta.heroPos, meta.villainPos, handCode);
+                if (meta.scenario === 'rfi' && hero.pos === 'BB' && toCall <= 0) {
+                    freq = { raise: 0, call: 100, fold: 0 };
+                }
                 const eq = Math.min(85, Math.max(32, Math.round((HAND_POWER[handCode] || 50) * 0.78)));
-                let reason = '';
-                if (freq.raise >= 60) reason = `【${meta.spotLabel}】${handCode} はRaise/3Bet主体のコアレンジ (推奨 ${freq.raise}%) です。`;
-                else if (freq.call >= 50) reason = `【${meta.spotLabel}】${handCode} はCallでディフェンスする頻度 (${freq.call}%) が高いハンドです。`;
-                else if (freq.raise + freq.call >= 30) reason = `【${meta.spotLabel}】${handCode} は混合戦略 (Raise ${freq.raise}% / Call ${freq.call}% / Fold ${freq.fold}%) の境界ハンドです。`;
-                else reason = `【${meta.spotLabel}】${handCode} はレンジ外のため Fold (${freq.fold}%) がGTO推奨です。`;
+                const sizing = buildActionAwareSizingInfo(hero, meta, freq, toCall, null);
 
-                return { handCode, equity: eq, potOdds, spotLabel: meta.spotLabel, boardTexture: 'プリフロップ (100BB)', raise: freq.raise, call: freq.call, fold: freq.fold, reason, scenario: meta.scenario, heroPos: meta.heroPos, villainPos: meta.villainPos };
+                let reason = '';
+                if (freq.raise >= 60) {
+                    reason = `【${meta.spotLabel}】${handCode} はアグレッシブに攻めるコアレンジ (推奨 ${freq.raise}% / 適正サイズ: ${sizing.recShortText}) です。`;
+                } else if (freq.call >= 50) {
+                    reason = toCall <= 0
+                        ? `【${meta.spotLabel}】オプションチェックでフロップへ進む状況です。`
+                        : `【${meta.spotLabel}】${handCode} はレイズせず Call (${fmtBB(Math.min(hero.stack, toCall))}) でディフェンスする頻度 (${freq.call}%) が高いハンドです。`;
+                } else if (freq.raise + freq.call >= 30) {
+                    reason = `【${meta.spotLabel}】${handCode} は混合戦略 (Raise ${freq.raise}% / Call ${freq.call}% / Fold ${freq.fold}%) の境界ハンドです。`;
+                } else {
+                    reason = `【${meta.spotLabel}】${handCode} はレンジ外のため、無理にチップを入れず Fold (${freq.fold}%) するのがGTO推奨です。`;
+                }
+
+                return {
+                    handCode, equity: eq, potOdds, spotLabel: meta.spotLabel, boardTexture: 'プリフロップ (100BB)',
+                    raise: freq.raise, call: freq.call, fold: freq.fold, reason,
+                    scenario: meta.scenario, heroPos: meta.heroPos, villainPos: meta.villainPos,
+                    ...sizing
+                };
             } else {
                 const post = analyzePostflopGTO(hero);
-                return { handCode, equity: post.equity, potOdds: post.potOdds, spotLabel: `${state.street.toUpperCase()} (${hero.pos})`, boardTexture: post.textureLabel, raise: post.raise, call: post.call, fold: post.fold, reason: post.reason, scenario: meta.scenario, heroPos: meta.heroPos, villainPos: meta.villainPos };
+                const freq = { raise: post.raise, call: post.call, fold: post.fold };
+                const sizing = buildActionAwareSizingInfo(hero, meta, freq, toCall, post);
+                return {
+                    handCode, equity: post.equity, potOdds: post.potOdds, spotLabel: `${state.street.toUpperCase()} (${hero.pos})`,
+                    boardTexture: post.textureLabel, raise: post.raise, call: post.call, fold: post.fold,
+                    reason: post.reason,
+                    scenario: meta.scenario, heroPos: meta.heroPos, villainPos: meta.villainPos,
+                    ...sizing
+                };
             }
         }
 
@@ -1977,6 +2163,22 @@
             document.getElementById('gto-hand-code').textContent = gto.handCode;
             document.getElementById('gto-equity').textContent = `${gto.equity}%`;
             document.getElementById('gto-pot-odds').textContent = `${gto.potOdds}%`;
+
+            const shortEl = document.getElementById('gto-rec-bet-short');
+            shortEl.textContent = gto.recShortText;
+            shortEl.className = `text-xs sm:text-sm font-black ${gto.shortColorCls} mono mt-1`;
+
+            const detailEl = document.getElementById('gto-rec-bet-detail');
+            detailEl.textContent = gto.recDetailText;
+            detailEl.className = `text-xs sm:text-sm font-black ${gto.detailColorCls} mono truncate mt-0.5`;
+
+            const boxEl = document.getElementById('gto-rec-sizing-box');
+            boxEl.className = `${gto.boxStyleCls} rounded-xl p-2 flex items-center justify-between gap-2`;
+
+            const setBtnEl = document.getElementById('gto-rec-set-btn');
+            if (gto.canSetBet) setBtnEl.classList.remove('hidden');
+            else setBtnEl.classList.add('hidden');
+
             document.getElementById('gto-spot-label').textContent = gto.spotLabel;
             document.getElementById('gto-board-texture').textContent = gto.boardTexture;
             document.getElementById('gto-freq-raise').textContent = `${gto.raise}%`;
